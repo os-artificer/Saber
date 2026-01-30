@@ -27,7 +27,7 @@ PROTO_FILES = $(wildcard $(PROTO_DIR)/*.proto)
 # generate go code files
 GO_GEN_FILES=$(PROTO_FILES:$(PROTO_DIR)/%.proto=$(GEN_DIR)/%.pb.go)
 
-.PHONY: all proto probe controller transfer clean
+.PHONY: all proto probe controller transfer docker-build clean
 
 # build target
 all: proto probe controller transfer
@@ -47,6 +47,13 @@ transfer:
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=0 GOOS=${GO_OS} GOARCH=amd64 go build -ldflags=$(BUILD_FLAG) -gcflags="all=-trimpath=$(PWD)" \
 				-asmflags="all=-trimpath=$(PWD)" -o $(BUILD_DIR)/$@ cmd/transfer/main.go
+
+# docker image (build from repo root: make docker-build)
+REGISTRY ?= saber
+DOCKER_IMAGE = $(REGISTRY)/saber:$(VERSION)
+docker-build:
+	docker build -f deploy/docker/Dockerfile -t $(DOCKER_IMAGE) .
+	@echo "Built $(DOCKER_IMAGE)"
 
 # build protobuf to go
 $(GEN_DIR)/%.pb.go: $(PROTO_DIR)/%.proto

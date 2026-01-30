@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "saber.transfer.fullname" . }}
+  labels:
+    {{- include "saber.labels" . | nindent 4 }}
+    app.kubernetes.io/component: transfer
+spec:
+  replicas: {{ .Values.transfer.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "saber.transfer.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "saber.transfer.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: transfer
+          image: {{ include "saber.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /app/transfer
+          args:
+            - -c
+            - /config/transfer.yaml
+          ports:
+            - name: grpc
+              containerPort: 26689
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+          {{- with .Values.transfer.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "saber.transfer.fullname" . }}
+      {{- with .Values.transfer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.transfer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

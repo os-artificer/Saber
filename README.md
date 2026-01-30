@@ -22,6 +22,48 @@ make transfer
 
 - Probe：`etc/probe.yaml`（controller/transfer 的 endpoints、collector.interval 等）。
 - Transfer：`etc/transfer.yaml`（service.listenAddress、kafka.brokers、kafka.topic 等）。
+- Controller：`etc/controller.yaml`（service.listenAddress 等）。
+
+## 部署（Helm + kubectl）
+
+在已有 Kubernetes 集群中一键部署 controller、transfer、probe。
+
+**依赖**：Docker、Helm、kubectl、可用的 Kubernetes 集群。
+
+**构建镜像**（可选，若使用本地镜像）：
+
+```bash
+make docker-build
+# 镜像默认为 saber/saber:$(VERSION)，可通过 REGISTRY 覆盖
+```
+
+**一键安装**：
+
+```bash
+./deploy/install.sh
+```
+
+指定命名空间：
+
+```bash
+./deploy/install.sh -n my-ns
+```
+
+使用自定义 values 覆盖（如 Kafka brokers、镜像等）：
+
+```bash
+./deploy/install.sh -n my-ns -f deploy/helm/saber/values-prod.yaml
+```
+
+安装后脚本会等待 controller、transfer（及 probe）Deployment 就绪，并输出 `kubectl get svc,pods` 示例。
+
+**卸载**：
+
+```bash
+helm uninstall saber -n <namespace>
+```
+
+Chart 与配置说明见 `deploy/helm/saber/`；Controller/Transfer 仅集群内 Service 暴露，需对外访问时可自行配置 Ingress 或 LoadBalancer。
 
 # 功能列表
 - Probe：双 gRPC 长连接 + 主机性能采集上报

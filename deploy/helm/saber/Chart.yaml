@@ -1,0 +1,11 @@
+apiVersion: v2
+name: saber
+description: saber Controller, Transfer, and Probe - gRPC services and host metrics collection
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - saber
+  - grpc
+  - metrics
+maintainers: []

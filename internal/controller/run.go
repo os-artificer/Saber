@@ -18,13 +18,17 @@ package controller
 
 import (
 	"context"
+	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
+	"os-artificer/saber/internal/controller/config"
 	"os-artificer/saber/internal/controller/service"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func setupGracefulShutdown(svr *service.Service) {
@@ -38,11 +42,30 @@ func setupGracefulShutdown(svr *service.Service) {
 	}()
 }
 
+func parseListenAddress(addr string) string {
+	addr = strings.TrimPrefix(addr, "tcp://")
+	if _, port, err := net.SplitHostPort(addr); err == nil && port != "" {
+		return ":" + port
+	}
+	return addr
+}
+
 func Run(cmd *cobra.Command, args []string) error {
-
 	ctx := context.Background()
-	svr := service.New(ctx, ":26688", "")
 
+	address := ":26688"
+	if ConfigFilePath != "" {
+		viper.SetConfigFile(ConfigFilePath)
+		viper.SetConfigType("yaml")
+		if err := viper.ReadInConfig(); err == nil {
+			var cfg config.Configuration
+			if err := viper.Unmarshal(&cfg); err == nil && cfg.Service.ListenAddress != "" {
+				address = parseListenAddress(cfg.Service.ListenAddress)
+			}
+		}
+	}
+
+	svr := service.New(ctx, address, "")
 	setupGracefulShutdown(svr)
 
 	return svr.Run()

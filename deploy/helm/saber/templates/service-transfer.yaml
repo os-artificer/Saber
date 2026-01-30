@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "saber.transfer.fullname" . }}
+  labels:
+    {{- include "saber.labels" . | nindent 4 }}
+    app.kubernetes.io/component: transfer
+spec:
+  type: ClusterIP
+  ports:
+    - port: 26689
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+  selector:
+    {{- include "saber.transfer.selectorLabels" . | nindent 4 }}
