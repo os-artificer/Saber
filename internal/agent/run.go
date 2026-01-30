@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 saber authors.
+ * Copyright 2025 Saber authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
 **/
 
-package probe
+package agent
 
 import (
 	"context"
@@ -24,9 +24,9 @@ import (
 	"syscall"
 	"time"
 
-	"os-artificer/saber/internal/probe/client"
-	"os-artificer/saber/internal/probe/collector"
-	"os-artificer/saber/internal/probe/config"
+	"os-artificer/saber/internal/agent/client"
+	"os-artificer/saber/internal/agent/collector"
+	"os-artificer/saber/internal/agent/config"
 	"os-artificer/saber/pkg/logger"
 
 	"github.com/spf13/cobra"
@@ -46,11 +46,6 @@ func Run(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	cfg := config.Cfg
 
-	ctrlClient, err := client.NewControllerClient(ctx, cfg.Controller.Endpoints, cfg.Name+"-"+cfg.Version)
-	if err != nil {
-		logger.Fatal("Failed to create controller client: %v", err)
-	}
-
 	transferClient, err := client.NewTransferClient(ctx, cfg.Transfer.Endpoints, cfg.Name+"-"+cfg.Version)
 	if err != nil {
 		logger.Fatal("Failed to create transfer client: %v", err)
@@ -59,14 +54,7 @@ func Run(cmd *cobra.Command, args []string) error {
 	setupGracefulShutdown()
 
 	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		if err := ctrlClient.Run(); err != nil {
-			logger.Warn("Controller client exited: %v", err)
-		}
-	}()
+	wg.Add(1)
 
 	go func() {
 		defer wg.Done()
@@ -80,16 +68,19 @@ func Run(cmd *cobra.Command, args []string) error {
 	if interval <= 0 {
 		interval = 10 * time.Second
 	}
+
 	go func() {
 		time.Sleep(interval) // wait for transfer stream to be ready
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
+
 		for range ticker.C {
 			payload, err := collector.Collect()
 			if err != nil {
 				logger.Warn("Collect metrics failed: %v", err)
 				continue
 			}
+
 			if err := transferClient.SendMessage(payload); err != nil {
 				logger.Warn("Send metrics to transfer failed: %v", err)
 			}

@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 saber authors.
+ * Copyright 2025 Saber authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,7 @@
  * limitations under the License.
 **/
 
-package probe
+package reporter
 
-import (
-	"os-artificer/saber/pkg/version"
-
-	"github.com/spf13/cobra"
-)
-
-var VersionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print Version Information",
-	Run: func(cmd *cobra.Command, args []string) {
-		version.Print("saber Probe")
-	},
+type Reporter struct {
 }

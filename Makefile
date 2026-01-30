@@ -27,26 +27,20 @@ PROTO_FILES = $(wildcard $(PROTO_DIR)/*.proto)
 # generate go code files
 GO_GEN_FILES=$(PROTO_FILES:$(PROTO_DIR)/%.proto=$(GEN_DIR)/%.pb.go)
 
-.PHONY: all proto probe controller transfer docker-build clean
+# binaries: one target per name, built from cmd/$(name)/main.go
+BINARIES := agent controller transfer
 
-# build target
-all: proto probe controller transfer
+.PHONY: all proto docker-build clean $(BINARIES)
+
+all: proto $(BINARIES)
 
 proto: $(GO_GEN_FILES)
 
-probe:
+$(BINARIES):
 	@mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=0 GOOS=${GO_OS} GOARCH=amd64 go build -ldflags=$(BUILD_FLAG) -gcflags="all=-trimpath=$(PWD)" \
-				-asmflags="all=-trimpath=$(PWD)" -o $(BUILD_DIR)/$@ cmd/probe/main.go
-
-controller:
-	@mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=0 GOOS=${GO_OS} GOARCH=amd64 go build -ldflags=$(BUILD_FLAG) -gcflags="all=-trimpath=$(PWD)" \
-				-asmflags="all=-trimpath=$(PWD)" -o $(BUILD_DIR)/$@ cmd/controller/main.go
-transfer:
-	@mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=0 GOOS=${GO_OS} GOARCH=amd64 go build -ldflags=$(BUILD_FLAG) -gcflags="all=-trimpath=$(PWD)" \
-				-asmflags="all=-trimpath=$(PWD)" -o $(BUILD_DIR)/$@ cmd/transfer/main.go
+	CGO_ENABLED=0 GOOS=$(GO_OS) GOARCH=amd64 go build -ldflags=$(BUILD_FLAG) \
+		-gcflags="all=-trimpath=$(PWD)" -asmflags="all=-trimpath=$(PWD)" \
+		-o $(BUILD_DIR)/$@ cmd/$@/main.go
 
 # docker image (build from repo root: make docker-build)
 REGISTRY ?= saber

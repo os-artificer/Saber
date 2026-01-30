@@ -12,23 +12,19 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+**/
 
-syntax             = "proto3";
-option  go_package = ".;proto";
+package sink
 
-message AgentRequest {
-    string              clientID = 1;
-    map<string, string> headers  = 2;
-    bytes               payload  = 3;
-}
+import (
+	"context"
 
-message AgentResponse {
-    int32  code    = 1;
-    string errmsg  = 2;
-    bytes  payload = 4;
-}
+	"os-artificer/saber/pkg/proto"
+)
 
-service ControllerService {
-    rpc Connect(stream AgentRequest) returns (stream AgentResponse) {}
+// Sink is the unified output interface for transfer data.
+// Implementations write TransferRequest to Kafka, file, stdout, etc.
+type Sink interface {
+	Write(ctx context.Context, req *proto.TransferRequest) error
+	Close() error
 }

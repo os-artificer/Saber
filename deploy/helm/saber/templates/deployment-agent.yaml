@@ -1,47 +1,47 @@
-{{- if and .Values.probe.enabled (not .Values.probe.daemonSet) }}
+{{- if and .Values.agent.enabled (not .Values.agent.daemonSet) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "saber.probe.fullname" . }}
+  name: {{ include "saber.agent.fullname" . }}
   labels:
     {{- include "saber.labels" . | nindent 4 }}
-    app.kubernetes.io/component: probe
+    app.kubernetes.io/component: agent
 spec:
-  replicas: {{ .Values.probe.replicaCount }}
+  replicas: {{ .Values.agent.replicaCount }}
   selector:
     matchLabels:
-      {{- include "saber.probe.selectorLabels" . | nindent 6 }}
+      {{- include "saber.agent.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "saber.probe.selectorLabels" . | nindent 8 }}
+        {{- include "saber.agent.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-        - name: probe
+        - name: agent
           image: {{ include "saber.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
-            - /app/probe
+            - /app/agent
           args:
             - -c
-            - /config/probe.yaml
+            - /config/agent.yaml
           volumeMounts:
             - name: config
               mountPath: /config
               readOnly: true
-          {{- with .Values.probe.resources }}
+          {{- with .Values.agent.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
       volumes:
         - name: config
           configMap:
-            name: {{ include "saber.probe.fullname" . }}
-      {{- with .Values.probe.nodeSelector }}
+            name: {{ include "saber.agent.fullname" . }}
+      {{- with .Values.agent.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.probe.tolerations }}
+      {{- with .Values.agent.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

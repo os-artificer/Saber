@@ -1,70 +1,94 @@
-# saber
+# Saber
 
-这是一个可以让自己念头通达的项目！
+A security management platform that integrates data collection and host control.
 
-## 架构
+## Features
 
-- **Probe**：主机探针，与 Controller 保持 gRPC 长连接（保活/心跳），与 Transfer 保持 gRPC 长连接并定时上报主机性能数据（CPU、内存等）。
-- **Controller**：gRPC 服务，接收 Probe 的 `Connect(stream ProbeRequest) returns (stream ProbeResponse)` 长连接。
-- **Transfer**：gRPC 服务，接收 Probe 的 `PushData(stream TransferRequest)` 流式数据，将收到的 Payload 写入 Kafka。
-- **Kafka**：Transfer 将每条性能数据作为一条消息写入配置的 Topic，可选以 ClientID 为 key。
+- **Agent**: Maintains gRPC long connections with Controller and Transfer, periodically reports host metrics (CPU, memory, etc.)
+- **Transfer**: Receives streaming data and writes to Kafka
+- **Controller**: Central gRPC service for agent connections
 
-## 构建
+## Architecture
 
-```bash
-make          # 生成 proto 并构建 probe、controller、transfer
-make probe    # 仅构建 probe
-make controller
-make transfer
+```
+┌─────────┐     Connect (stream)      ┌────────────┐
+│  Agent  │◄─────────────────────────►│ Controller │
+└────┬────┘  AgentRequest/Response    └────────────┘
+     │
+     │ PushData (stream)
+     ▼
+┌─────────┐     Kafka                 ┌───────┐
+│ Transfer│──────────────────────────►│ Kafka │
+└─────────┘  TransferRequest payload  └───────┘
 ```
 
-## 配置
+- **Agent**: Host agent that maintains gRPC long connections with Controller (keepalive/heartbeat) and Transfer, periodically reporting host metrics (CPU, memory, etc.)
+- **Controller**: gRPC service that accepts Agent connections via `Connect(stream AgentRequest) returns (stream AgentResponse)`
+- **Transfer**: gRPC service that receives streaming data from Agent via `PushData(stream TransferRequest)` and writes the payload to Kafka
+- **Kafka**: Transfer writes each metric as a message to the configured topic; ClientID can optionally be used as the message key
 
-- Probe：`etc/probe.yaml`（controller/transfer 的 endpoints、collector.interval 等）。
-- Transfer：`etc/transfer.yaml`（service.listenAddress、kafka.brokers、kafka.topic 等）。
-- Controller：`etc/controller.yaml`（service.listenAddress 等）。
+## Prerequisites
 
-## 部署（Helm + kubectl）
+- Go 1.23+
+- Docker, Helm, kubectl (for Kubernetes deployment)
+- Kafka (optional, for Transfer sink)
 
-在已有 Kubernetes 集群中一键部署 controller、transfer、probe。
+## Build
 
-**依赖**：Docker、Helm、kubectl、可用的 Kubernetes 集群。
+```bash
+make              # Generate proto and build agent, controller, transfer
+make agent        # Build agent only
+make controller   # Build controller only
+make transfer     # Build transfer only
+```
 
-**构建镜像**（可选，若使用本地镜像）：
+## Configuration
+
+| Component | Config File | Key Settings |
+|-----------|-------------|--------------|
+| Agent | `etc/agent.yaml` | controller/transfer endpoints, collector.interval |
+| Transfer | `etc/transfer.yaml` | service.listenAddress, kafka.brokers, kafka.topic |
+| Controller | `etc/controller.yaml` | service.listenAddress |
+
+## Deployment (Helm + kubectl)
+
+Deploy controller, transfer, and agent to an existing Kubernetes cluster.
+
+### Build image (optional, for local use)
 
 ```bash
 make docker-build
-# 镜像默认为 saber/saber:$(VERSION)，可通过 REGISTRY 覆盖
+# Image defaults to saber/saber:$(VERSION), override with REGISTRY
 ```
 
-**一键安装**：
+### Install
 
 ```bash
 ./deploy/install.sh
 ```
 
-指定命名空间：
+With a specific namespace:
 
 ```bash
 ./deploy/install.sh -n my-ns
 ```
 
-使用自定义 values 覆盖（如 Kafka brokers、镜像等）：
+With custom values (e.g., Kafka brokers, image):
 
 ```bash
 ./deploy/install.sh -n my-ns -f deploy/helm/saber/values-prod.yaml
 ```
 
-安装后脚本会等待 controller、transfer（及 probe）Deployment 就绪，并输出 `kubectl get svc,pods` 示例。
+The install script waits for controller, transfer, and agent Deployments to be ready, then prints `kubectl get svc,pods` examples.
 
-**卸载**：
+### Uninstall
 
 ```bash
 helm uninstall saber -n <namespace>
 ```
 
-Chart 与配置说明见 `deploy/helm/saber/`；Controller/Transfer 仅集群内 Service 暴露，需对外访问时可自行配置 Ingress 或 LoadBalancer。
+Chart and configuration details: `deploy/helm/saber/`. Controller and Transfer are exposed only via cluster-internal Services; use Ingress or LoadBalancer for external access.
 
-# 功能列表
-- Probe：双 gRPC 长连接 + 主机性能采集上报
-- Transfer：接收数据并写入 Kafka
+## License
+
+See [LICENSE](LICENSE) for details.

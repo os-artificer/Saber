@@ -3,7 +3,7 @@ saber has been installed.
 Components:
   - controller: gRPC server on port 26688
   - transfer:   gRPC server on port 26689 (writes to Kafka when configured)
-  - probe:      connects to controller and transfer, reports host metrics
+  - agent:      connects to controller and transfer, reports host metrics
 
 To list pods and services:
   kubectl get svc,pods -l app.kubernetes.io/name=saber -n {{ .Release.Namespace }}
