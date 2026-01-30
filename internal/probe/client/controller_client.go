@@ -211,7 +211,7 @@ func (c *ControllerClient) receiveMessages() {
 }
 
 func (c *ControllerClient) sendConnectionEstablished() {
-	msg := &proto.AgentRequest{
+	msg := &proto.ProbeRequest{
 		ClientID: c.clientId,
 	}
 
@@ -257,7 +257,7 @@ func (c *ControllerClient) SendMessage(content string) error {
 		return fmt.Errorf("stream not initialized")
 	}
 
-	msg := &proto.AgentRequest{}
+	msg := &proto.ProbeRequest{}
 
 	return c.stream.Send(msg)
 }

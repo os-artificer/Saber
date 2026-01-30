@@ -17,18 +17,18 @@
 syntax             = "proto3";
 option  go_package = ".;proto";
 
-message AgentRequest {
+message ProbeRequest {
     string              clientID = 1;
     map<string, string> headers  = 2;
     bytes               payload  = 3;
 }
 
-message AgentResponse {
+message ProbeResponse {
     int32  code    = 1;
     string errmsg  = 2;
     bytes  payload = 4;
 }
 
 service ControllerService {
-    rpc Connect(stream AgentRequest) returns (stream AgentResponse) {}
+    rpc Connect(stream ProbeRequest) returns (stream ProbeResponse) {}
 }

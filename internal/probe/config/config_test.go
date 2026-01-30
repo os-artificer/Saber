@@ -14,18 +14,30 @@
  * limitations under the License.
 **/
 
-package agent
+package config_test
 
 import (
-	"os-artificer/saber/pkg/version"
+	"os"
+	"testing"
 
-	"github.com/spf13/cobra"
+	"os-artificer/saber/internal/probe/config"
+
+	"gopkg.in/yaml.v2"
 )
 
-var VersionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print Version Information",
-	Run: func(cmd *cobra.Command, args []string) {
-		version.Print("saber Agent")
-	},
+const (
+	probeConfigFile = "../../../etc/probe.yaml"
+)
+
+func TestConfig(t *testing.T) {
+	data, err := os.ReadFile(probeConfigFile)
+	if err != nil {
+		t.Fatalf("failed to read probe.yaml. errmsg:%v", err)
+	}
+
+	if err = yaml.Unmarshal(data, &config.Cfg); err != nil {
+		t.Fatalf("failed to unmarshal yaml. errmsg:%v", err)
+	}
+
+	t.Logf("cfg:%v", config.Cfg)
 }

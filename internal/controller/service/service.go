@@ -99,7 +99,7 @@ func (s *Service) Connect(stream proto.ControllerService_ConnectServer) error {
 	conn := &Connection{
 		ClientID:   clientID,
 		Stream:     stream,
-		SendChan:   make(chan *proto.AgentResponse, 100),
+		SendChan:   make(chan *proto.ProbeResponse, 100),
 		LastActive: time.Now(),
 		Metadata:   metadata,
 	}

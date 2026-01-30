@@ -14,8 +14,18 @@
  * limitations under the License.
 **/
 
-package agent
+package probe
 
-var (
-	ConfigFilePath = ""
+import (
+	"os-artificer/saber/pkg/version"
+
+	"github.com/spf13/cobra"
 )
+
+var VersionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print Version Information",
+	Run: func(cmd *cobra.Command, args []string) {
+		version.Print("saber Probe")
+	},
+}

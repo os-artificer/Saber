@@ -28,7 +28,7 @@ import (
 type Connection struct {
 	ClientID   string
 	Stream     proto.ControllerService_ConnectServer
-	SendChan   chan *proto.AgentResponse
+	SendChan   chan *proto.ProbeResponse
 	LastActive time.Time
 	Metadata   map[string]string
 	mu         sync.RWMutex

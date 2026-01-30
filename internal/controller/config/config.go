@@ -36,7 +36,7 @@ type LogConfig struct {
 	MaxBackupAge   int    `yaml:"maxBackupAge"`
 }
 
-// Configuration agent's configuration
+// Configuration controller's configuration
 type Configuration struct {
 	Name      string          `yaml:"name"`
 	Version   string          `yaml:"version"`

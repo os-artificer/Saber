@@ -18,15 +18,59 @@ package transfer
 
 import (
 	"context"
-	"os-artificer/saber/internal/transfer/service"
+	"net"
+	"strings"
 
+	"os-artificer/saber/internal/transfer/config"
+	"os-artificer/saber/internal/transfer/service"
+	"os-artificer/saber/pkg/logger"
+
+	"github.com/segmentio/kafka-go"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func Run(cmd *cobra.Command, args []string) error {
-
 	ctx := context.Background()
-	svr := service.New(ctx, ":26689", "")
 
+	address := ":26689"
+	var kafkaWriter *kafka.Writer
+
+	if ConfigFilePath != "" {
+		viper.SetConfigFile(ConfigFilePath)
+		viper.SetConfigType("yaml")
+		if err := viper.ReadInConfig(); err == nil {
+			var cfg config.Configuration
+			if err := viper.Unmarshal(&cfg); err == nil {
+				if cfg.Service.ListenAddress != "" {
+					address = parseListenAddress(cfg.Service.ListenAddress)
+				}
+				if len(cfg.Kafka.Brokers) > 0 && cfg.Kafka.Topic != "" {
+					kafkaWriter = &kafka.Writer{
+						Addr:     kafka.TCP(cfg.Kafka.Brokers...),
+						Topic:     cfg.Kafka.Topic,
+						Balancer:  &kafka.LeastBytes{},
+					}
+					defer func() {
+						if err := kafkaWriter.Close(); err != nil {
+							logger.Warn("kafka writer close: %v", err)
+						}
+					}()
+				}
+			}
+		}
+	}
+
+	svr := service.New(ctx, address, "", kafkaWriter)
 	return svr.Run()
+}
+
+func parseListenAddress(addr string) string {
+	if strings.HasPrefix(addr, "tcp://") {
+		addr = strings.TrimPrefix(addr, "tcp://")
+	}
+	if host, port, err := net.SplitHostPort(addr); err == nil && host != "" && port != "" {
+		return ":" + port
+	}
+	return addr
 }
