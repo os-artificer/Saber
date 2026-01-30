@@ -27,17 +27,17 @@ PROTO_FILES = $(wildcard $(PROTO_DIR)/*.proto)
 # generate go code files
 GO_GEN_FILES=$(PROTO_FILES:$(PROTO_DIR)/%.proto=$(GEN_DIR)/%.pb.go)
 
-.PHONY: all proto agent controller transfer clean
+.PHONY: all proto probe controller transfer clean
 
 # build target
-all: proto agent controller transfer
+all: proto probe controller transfer
 
 proto: $(GO_GEN_FILES)
 
-agent:
+probe:
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=0 GOOS=${GO_OS} GOARCH=amd64 go build -ldflags=$(BUILD_FLAG) -gcflags="all=-trimpath=$(PWD)" \
-				-asmflags="all=-trimpath=$(PWD)" -o $(BUILD_DIR)/$@ cmd/agent/main.go
+				-asmflags="all=-trimpath=$(PWD)" -o $(BUILD_DIR)/$@ cmd/probe/main.go
 
 controller:
 	@mkdir -p $(BUILD_DIR)

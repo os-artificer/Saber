@@ -17,20 +17,25 @@
 package service
 
 import (
+	"context"
 	"sync"
 
 	"os-artificer/saber/pkg/constant"
 	"os-artificer/saber/pkg/gerrors"
+	"os-artificer/saber/pkg/logger"
 	"os-artificer/saber/pkg/proto"
+
+	"github.com/segmentio/kafka-go"
 )
 
 type requestEventC chan *proto.TransferRequest
 
 // connectionHandler service connection handler
 type connectionHandler struct {
-	eventC requestEventC
-	quit   chan struct{}
-	wg     sync.WaitGroup
+	eventC      requestEventC
+	quit        chan struct{}
+	wg          sync.WaitGroup
+	kafkaWriter *kafka.Writer
 }
 
 func (c *connectionHandler) readEvent() {
@@ -40,7 +45,15 @@ func (c *connectionHandler) readEvent() {
 			return
 
 		case msg := <-c.eventC:
-			_ = msg
+			if msg != nil && len(msg.Payload) > 0 && c.kafkaWriter != nil {
+				key := []byte(msg.ClientID)
+				if err := c.kafkaWriter.WriteMessages(context.Background(), kafka.Message{
+					Key:   key,
+					Value: msg.Payload,
+				}); err != nil {
+					logger.Warn("write to kafka failed: %v", err)
+				}
+			}
 		}
 	}
 }

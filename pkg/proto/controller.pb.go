@@ -37,7 +37,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type AgentRequest struct {
+type ProbeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ClientID      string                 `protobuf:"bytes,1,opt,name=clientID,proto3" json:"clientID,omitempty"`
 	Headers       map[string]string      `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -46,20 +46,20 @@ type AgentRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AgentRequest) Reset() {
-	*x = AgentRequest{}
+func (x *ProbeRequest) Reset() {
+	*x = ProbeRequest{}
 	mi := &file_controller_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AgentRequest) String() string {
+func (x *ProbeRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AgentRequest) ProtoMessage() {}
+func (*ProbeRequest) ProtoMessage() {}
 
-func (x *AgentRequest) ProtoReflect() protoreflect.Message {
+func (x *ProbeRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_controller_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -71,33 +71,33 @@ func (x *AgentRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AgentRequest.ProtoReflect.Descriptor instead.
-func (*AgentRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ProbeRequest.ProtoReflect.Descriptor instead.
+func (*ProbeRequest) Descriptor() ([]byte, []int) {
 	return file_controller_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *AgentRequest) GetClientID() string {
+func (x *ProbeRequest) GetClientID() string {
 	if x != nil {
 		return x.ClientID
 	}
 	return ""
 }
 
-func (x *AgentRequest) GetHeaders() map[string]string {
+func (x *ProbeRequest) GetHeaders() map[string]string {
 	if x != nil {
 		return x.Headers
 	}
 	return nil
 }
 
-func (x *AgentRequest) GetPayload() []byte {
+func (x *ProbeRequest) GetPayload() []byte {
 	if x != nil {
 		return x.Payload
 	}
 	return nil
 }
 
-type AgentResponse struct {
+type ProbeResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Code          int32                  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Errmsg        string                 `protobuf:"bytes,2,opt,name=errmsg,proto3" json:"errmsg,omitempty"`
@@ -106,20 +106,20 @@ type AgentResponse struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AgentResponse) Reset() {
-	*x = AgentResponse{}
+func (x *ProbeResponse) Reset() {
+	*x = ProbeResponse{}
 	mi := &file_controller_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AgentResponse) String() string {
+func (x *ProbeResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AgentResponse) ProtoMessage() {}
+func (*ProbeResponse) ProtoMessage() {}
 
-func (x *AgentResponse) ProtoReflect() protoreflect.Message {
+func (x *ProbeResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_controller_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -131,26 +131,26 @@ func (x *AgentResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AgentResponse.ProtoReflect.Descriptor instead.
-func (*AgentResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ProbeResponse.ProtoReflect.Descriptor instead.
+func (*ProbeResponse) Descriptor() ([]byte, []int) {
 	return file_controller_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *AgentResponse) GetCode() int32 {
+func (x *ProbeResponse) GetCode() int32 {
 	if x != nil {
 		return x.Code
 	}
 	return 0
 }
 
-func (x *AgentResponse) GetErrmsg() string {
+func (x *ProbeResponse) GetErrmsg() string {
 	if x != nil {
 		return x.Errmsg
 	}
 	return ""
 }
 
-func (x *AgentResponse) GetPayload() []byte {
+func (x *ProbeResponse) GetPayload() []byte {
 	if x != nil {
 		return x.Payload
 	}
@@ -162,19 +162,19 @@ var File_controller_proto protoreflect.FileDescriptor
 const file_controller_proto_rawDesc = "" +
 	"\n" +
 	"\x10controller.proto\"\xb6\x01\n" +
-	"\fAgentRequest\x12\x1a\n" +
+	"\fProbeRequest\x12\x1a\n" +
 	"\bclientID\x18\x01 \x01(\tR\bclientID\x124\n" +
-	"\aheaders\x18\x02 \x03(\v2\x1a.AgentRequest.HeadersEntryR\aheaders\x12\x18\n" +
+	"\aheaders\x18\x02 \x03(\v2\x1a.ProbeRequest.HeadersEntryR\aheaders\x12\x18\n" +
 	"\apayload\x18\x03 \x01(\fR\apayload\x1a:\n" +
 	"\fHeadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"U\n" +
-	"\rAgentResponse\x12\x12\n" +
+	"\rProbeResponse\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x16\n" +
 	"\x06errmsg\x18\x02 \x01(\tR\x06errmsg\x12\x18\n" +
 	"\apayload\x18\x04 \x01(\fR\apayload2C\n" +
 	"\x11ControllerService\x12.\n" +
-	"\aConnect\x12\r.AgentRequest\x1a\x0e.AgentResponse\"\x00(\x010\x01B\tZ\a.;protob\x06proto3"
+	"\aConnect\x12\r.ProbeRequest\x1a\x0e.ProbeResponse\"\x00(\x010\x01B\tZ\a.;protob\x06proto3"
 
 var (
 	file_controller_proto_rawDescOnce sync.Once
@@ -190,14 +190,14 @@ func file_controller_proto_rawDescGZIP() []byte {
 
 var file_controller_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_controller_proto_goTypes = []any{
-	(*AgentRequest)(nil),  // 0: AgentRequest
-	(*AgentResponse)(nil), // 1: AgentResponse
-	nil,                   // 2: AgentRequest.HeadersEntry
+	(*ProbeRequest)(nil),  // 0: ProbeRequest
+	(*ProbeResponse)(nil), // 1: ProbeResponse
+	nil,                   // 2: ProbeRequest.HeadersEntry
 }
 var file_controller_proto_depIdxs = []int32{
-	2, // 0: AgentRequest.headers:type_name -> AgentRequest.HeadersEntry
-	0, // 1: ControllerService.Connect:input_type -> AgentRequest
-	1, // 2: ControllerService.Connect:output_type -> AgentResponse
+	2, // 0: ProbeRequest.headers:type_name -> ProbeRequest.HeadersEntry
+	0, // 1: ControllerService.Connect:input_type -> ProbeRequest
+	1, // 2: ControllerService.Connect:output_type -> ProbeResponse
 	2, // [2:3] is the sub-list for method output_type
 	1, // [1:2] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

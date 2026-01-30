@@ -41,6 +41,17 @@ type LogConfig struct {
 	BackupAge   int    `yaml:"MaxAge"`
 }
 
-// Configuration agent's configuration
-type Configuration struct {
+// KafkaConfig Kafka producer configuration
+type KafkaConfig struct {
+	Brokers []string `yaml:"brokers"`
+	Topic   string   `yaml:"topic"`
 }
+
+// Configuration transfer's configuration
+type Configuration struct {
+	Service ServiceConfig `yaml:"service"`
+	Kafka   KafkaConfig   `yaml:"kafka"`
+}
+
+// Cfg global config (loaded by run)
+var Cfg Configuration

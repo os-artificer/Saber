@@ -17,11 +17,12 @@
 package config
 
 var Cfg = Configuration{
-	Name:       "Agent",
+	Name:       "Probe",
 	Version:    "v1.0.0",
 	Discovery:  DiscoveryConfig{},
 	Controller: ControllerConfig{},
 	Transfer:   TransferConfig{},
+	Collector:  CollectorConfig{Interval: 10},
 	Engine: EngineConfig{
 		Script: ScriptEngine{},
 		Data:   DataEngine{},
@@ -30,23 +31,25 @@ var Cfg = Configuration{
 }
 
 // DiscoveryConfig discovery configuration
-// which is used to connect discovery server.
 type DiscoveryConfig struct {
 	Endpoints        string `yaml:"endpoints"`
 	SyncMetaInterval int    `yaml:"syncMetaInterval"`
 }
 
 // ControllerConfig controller service configuration
-// which is used to connect controller server.
 type ControllerConfig struct {
 	Endpoints        string `yaml:"endpoints"`
 	SyncMetaInterval int    `yaml:"syncMetaInterval"`
 }
 
 // TransferConfig transfer service configuration
-// which is used to connect transfer server.
 type TransferConfig struct {
 	Endpoints string `yaml:"endpoints"`
+}
+
+// CollectorConfig host metrics collector configuration
+type CollectorConfig struct {
+	Interval int `yaml:"interval"` // seconds
 }
 
 // ScriptEngine script engine
@@ -65,7 +68,7 @@ type DataEngine struct {
 // EngineConfig engine config
 type EngineConfig struct {
 	Script ScriptEngine `yaml:"script"`
-	Data   DataEngine   `yaml:"data"`
+	Data   DataEngine  `yaml:"data"`
 }
 
 // LogConfig log config
@@ -76,13 +79,14 @@ type LogConfig struct {
 	MaxBackupAge   int    `yaml:"maxBackupAge"`
 }
 
-// Configuration agent's configuration
+// Configuration probe's configuration
 type Configuration struct {
 	Name       string           `yaml:"name"`
 	Version    string           `yaml:"version"`
 	Discovery  DiscoveryConfig  `yaml:"discovery"`
 	Controller ControllerConfig `yaml:"controller"`
 	Transfer   TransferConfig   `yaml:"transfer"`
+	Collector  CollectorConfig  `yaml:"collector"`
 	Engine     EngineConfig     `yaml:"engine"`
 	Log        LogConfig        `yaml:"log"`
 }

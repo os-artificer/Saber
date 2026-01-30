@@ -25,6 +25,7 @@ import (
 	"os-artificer/saber/pkg/logger"
 	"os-artificer/saber/pkg/proto"
 
+	"github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/peer"
@@ -33,16 +34,18 @@ import (
 type Service struct {
 	proto.UnimplementedTransferServiceServer
 
-	ctx       context.Context
-	address   string
-	serviceID string
+	ctx          context.Context
+	address      string
+	serviceID    string
+	kafkaWriter  *kafka.Writer
 }
 
-func New(ctx context.Context, address string, serviceID string) *Service {
+func New(ctx context.Context, address string, serviceID string, kafkaWriter *kafka.Writer) *Service {
 	return &Service{
-		ctx:       ctx,
-		address:   address,
-		serviceID: serviceID,
+		ctx:         ctx,
+		address:     address,
+		serviceID:   serviceID,
+		kafkaWriter: kafkaWriter,
 	}
 }
 
@@ -56,8 +59,9 @@ func (s *Service) PushData(stream proto.TransferService_PushDataServer) error {
 	}
 
 	connHandler := &connectionHandler{
-		eventC: make(requestEventC, constant.DefaultMaxReceiveMessageSize),
-		quit:   make(chan struct{}),
+		eventC:      make(requestEventC, constant.DefaultMaxReceiveMessageSize),
+		quit:        make(chan struct{}),
+		kafkaWriter: s.kafkaWriter,
 	}
 
 	connHandler.run()
