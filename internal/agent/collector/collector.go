@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 saber authors.
+ * Copyright 2025 Saber authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,14 +28,14 @@ import (
 
 // HostMetrics host performance metrics for transfer
 type HostMetrics struct {
-	Hostname     string  `json:"hostname"`
-	Timestamp    int64   `json:"timestamp"`
-	CPUPercent   float64 `json:"cpu_percent"`
-	MemPercent   float64 `json:"mem_percent"`
-	MemUsedMB    uint64  `json:"mem_used_mb"`
-	MemTotalMB  uint64  `json:"mem_total_mb"`
-	Uptime       uint64  `json:"uptime_sec"`
-	BootTime     uint64  `json:"boot_time"`
+	Hostname   string  `json:"hostname"`
+	Timestamp  int64   `json:"timestamp"`
+	CPUPercent float64 `json:"cpu_percent"`
+	MemPercent float64 `json:"mem_percent"`
+	MemUsedMB  uint64  `json:"mem_used_mb"`
+	MemTotalMB uint64  `json:"mem_total_mb"`
+	Uptime     uint64  `json:"uptime_sec"`
+	BootTime   uint64  `json:"boot_time"`
 }
 
 // Collect gathers host metrics and returns JSON payload

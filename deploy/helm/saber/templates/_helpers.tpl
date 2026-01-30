@@ -27,11 +27,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{/*
-Selector labels for probe
+Selector labels for agent
 */}}
-{{- define "saber.probe.selectorLabels" -}}
+{{- define "saber.agent.selectorLabels" -}}
 app.kubernetes.io/name: saber
-app.kubernetes.io/component: probe
+app.kubernetes.io/component: agent
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
@@ -50,10 +50,10 @@ Transfer full name
 {{- end -}}
 
 {{/*
-Probe full name
+Agent full name
 */}}
-{{- define "saber.probe.fullname" -}}
-{{ .Release.Name }}-probe
+{{- define "saber.agent.fullname" -}}
+{{ .Release.Name }}-agent
 {{- end -}}
 
 {{/*

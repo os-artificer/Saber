@@ -1,3 +1,3 @@
-package probe
+package agent
 
 var ConfigFilePath = ""

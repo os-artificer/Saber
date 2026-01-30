@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 saber authors.
+ * Copyright 2025 Saber authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,9 @@ import (
 	"strings"
 
 	"os-artificer/saber/internal/transfer/config"
-	"os-artificer/saber/internal/transfer/service"
+	"os-artificer/saber/internal/transfer/sink"
+	sinkkafka "os-artificer/saber/internal/transfer/sink/kafka"
+	"os-artificer/saber/internal/transfer/source"
 	"os-artificer/saber/pkg/logger"
 
 	"github.com/segmentio/kafka-go"
@@ -32,44 +34,67 @@ import (
 
 func Run(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
+	address, out, closeSink := loadTransferConfig()
+	if closeSink != nil {
+		defer closeSink()
+	}
 
-	address := ":26689"
-	var kafkaWriter *kafka.Writer
+	handler := source.NewConnectionHandler(out)
+	defer handler.Close()
 
-	if ConfigFilePath != "" {
-		viper.SetConfigFile(ConfigFilePath)
-		viper.SetConfigType("yaml")
-		if err := viper.ReadInConfig(); err == nil {
-			var cfg config.Configuration
-			if err := viper.Unmarshal(&cfg); err == nil {
-				if cfg.Service.ListenAddress != "" {
-					address = parseListenAddress(cfg.Service.ListenAddress)
-				}
-				if len(cfg.Kafka.Brokers) > 0 && cfg.Kafka.Topic != "" {
-					kafkaWriter = &kafka.Writer{
-						Addr:     kafka.TCP(cfg.Kafka.Brokers...),
-						Topic:     cfg.Kafka.Topic,
-						Balancer:  &kafka.LeastBytes{},
-					}
-					defer func() {
-						if err := kafkaWriter.Close(); err != nil {
-							logger.Warn("kafka writer close: %v", err)
-						}
-					}()
-				}
-			}
+	agentSource := source.NewAgentSource(address)
+	return agentSource.Run(ctx, handler)
+}
+
+// loadTransferConfig reads config from ConfigFilePath and returns listen address, optional sink, and optional cleanup.
+func loadTransferConfig() (address string, out sink.Sink, closeSink func()) {
+	address = ":26689"
+
+	if ConfigFilePath == "" {
+		return address, nil, nil
+	}
+
+	viper.SetConfigFile(ConfigFilePath)
+	viper.SetConfigType("yaml")
+
+	if err := viper.ReadInConfig(); err != nil {
+		return address, nil, nil
+	}
+
+	var cfg config.Configuration
+
+	if err := viper.Unmarshal(&cfg); err != nil {
+		return address, nil, nil
+	}
+
+	if cfg.Service.ListenAddress != "" {
+		address = parseListenAddress(cfg.Service.ListenAddress)
+	}
+
+	if len(cfg.Kafka.Brokers) == 0 || cfg.Kafka.Topic == "" {
+		return address, nil, nil
+	}
+
+	writer := &kafka.Writer{
+		Addr:     kafka.TCP(cfg.Kafka.Brokers...),
+		Topic:    cfg.Kafka.Topic,
+		Balancer: &kafka.LeastBytes{},
+	}
+
+	out = sinkkafka.New(writer)
+
+	closeSink = func() {
+		if err := out.Close(); err != nil {
+			logger.Warn("sink close: %v", err)
 		}
 	}
 
-	svr := service.New(ctx, address, "", kafkaWriter)
-	return svr.Run()
+	return address, out, closeSink
 }
 
 func parseListenAddress(addr string) string {
-	if strings.HasPrefix(addr, "tcp://") {
-		addr = strings.TrimPrefix(addr, "tcp://")
-	}
-	if host, port, err := net.SplitHostPort(addr); err == nil && host != "" && port != "" {
+	addr = strings.TrimPrefix(addr, "tcp://")
+	if _, port, err := net.SplitHostPort(addr); err == nil && port != "" {
 		return ":" + port
 	}
 	return addr

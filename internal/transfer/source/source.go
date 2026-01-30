@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 saber authors.
+ * Copyright 2025 Saber authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,22 @@
  * limitations under the License.
 **/
 
-package reporter
+package source
 
-type Reporter struct {
+import (
+	"context"
+
+	"os-artificer/saber/pkg/proto"
+)
+
+// Handler processes a single TransferRequest (e.g. write to Kafka, log).
+// All source implementations deliver received requests to a Handler.
+type Handler interface {
+	OnTransferRequest(req *proto.TransferRequest) error
+}
+
+// Source is a data source that runs and delivers TransferRequests to the handler
+// until context is done. Implementations may start a gRPC server or other acceptor.
+type Source interface {
+	Run(ctx context.Context, h Handler) error
 }

@@ -1,5 +1,5 @@
 //*
-// Copyright 2025 saber authors.
+// Copyright 2025 Saber authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ProbeRequest struct {
+type AgentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ClientID      string                 `protobuf:"bytes,1,opt,name=clientID,proto3" json:"clientID,omitempty"`
 	Headers       map[string]string      `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -45,20 +45,20 @@ type ProbeRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ProbeRequest) Reset() {
-	*x = ProbeRequest{}
+func (x *AgentRequest) Reset() {
+	*x = AgentRequest{}
 	mi := &file_controller_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ProbeRequest) String() string {
+func (x *AgentRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ProbeRequest) ProtoMessage() {}
+func (*AgentRequest) ProtoMessage() {}
 
-func (x *ProbeRequest) ProtoReflect() protoreflect.Message {
+func (x *AgentRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_controller_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -70,33 +70,33 @@ func (x *ProbeRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ProbeRequest.ProtoReflect.Descriptor instead.
-func (*ProbeRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use AgentRequest.ProtoReflect.Descriptor instead.
+func (*AgentRequest) Descriptor() ([]byte, []int) {
 	return file_controller_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ProbeRequest) GetClientID() string {
+func (x *AgentRequest) GetClientID() string {
 	if x != nil {
 		return x.ClientID
 	}
 	return ""
 }
 
-func (x *ProbeRequest) GetHeaders() map[string]string {
+func (x *AgentRequest) GetHeaders() map[string]string {
 	if x != nil {
 		return x.Headers
 	}
 	return nil
 }
 
-func (x *ProbeRequest) GetPayload() []byte {
+func (x *AgentRequest) GetPayload() []byte {
 	if x != nil {
 		return x.Payload
 	}
 	return nil
 }
 
-type ProbeResponse struct {
+type AgentResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Code          int32                  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	Errmsg        string                 `protobuf:"bytes,2,opt,name=errmsg,proto3" json:"errmsg,omitempty"`
@@ -105,20 +105,20 @@ type ProbeResponse struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ProbeResponse) Reset() {
-	*x = ProbeResponse{}
+func (x *AgentResponse) Reset() {
+	*x = AgentResponse{}
 	mi := &file_controller_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ProbeResponse) String() string {
+func (x *AgentResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ProbeResponse) ProtoMessage() {}
+func (*AgentResponse) ProtoMessage() {}
 
-func (x *ProbeResponse) ProtoReflect() protoreflect.Message {
+func (x *AgentResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_controller_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -130,26 +130,26 @@ func (x *ProbeResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ProbeResponse.ProtoReflect.Descriptor instead.
-func (*ProbeResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use AgentResponse.ProtoReflect.Descriptor instead.
+func (*AgentResponse) Descriptor() ([]byte, []int) {
 	return file_controller_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ProbeResponse) GetCode() int32 {
+func (x *AgentResponse) GetCode() int32 {
 	if x != nil {
 		return x.Code
 	}
 	return 0
 }
 
-func (x *ProbeResponse) GetErrmsg() string {
+func (x *AgentResponse) GetErrmsg() string {
 	if x != nil {
 		return x.Errmsg
 	}
 	return ""
 }
 
-func (x *ProbeResponse) GetPayload() []byte {
+func (x *AgentResponse) GetPayload() []byte {
 	if x != nil {
 		return x.Payload
 	}
@@ -161,19 +161,19 @@ var File_controller_proto protoreflect.FileDescriptor
 const file_controller_proto_rawDesc = "" +
 	"\n" +
 	"\x10controller.proto\"\xb6\x01\n" +
-	"\fProbeRequest\x12\x1a\n" +
+	"\fAgentRequest\x12\x1a\n" +
 	"\bclientID\x18\x01 \x01(\tR\bclientID\x124\n" +
-	"\aheaders\x18\x02 \x03(\v2\x1a.ProbeRequest.HeadersEntryR\aheaders\x12\x18\n" +
+	"\aheaders\x18\x02 \x03(\v2\x1a.AgentRequest.HeadersEntryR\aheaders\x12\x18\n" +
 	"\apayload\x18\x03 \x01(\fR\apayload\x1a:\n" +
 	"\fHeadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"U\n" +
-	"\rProbeResponse\x12\x12\n" +
+	"\rAgentResponse\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x16\n" +
 	"\x06errmsg\x18\x02 \x01(\tR\x06errmsg\x12\x18\n" +
 	"\apayload\x18\x04 \x01(\fR\apayload2C\n" +
 	"\x11ControllerService\x12.\n" +
-	"\aConnect\x12\r.ProbeRequest\x1a\x0e.ProbeResponse\"\x00(\x010\x01B\tZ\a.;protob\x06proto3"
+	"\aConnect\x12\r.AgentRequest\x1a\x0e.AgentResponse\"\x00(\x010\x01B\tZ\a.;protob\x06proto3"
 
 var (
 	file_controller_proto_rawDescOnce sync.Once
@@ -189,14 +189,14 @@ func file_controller_proto_rawDescGZIP() []byte {
 
 var file_controller_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_controller_proto_goTypes = []any{
-	(*ProbeRequest)(nil),  // 0: ProbeRequest
-	(*ProbeResponse)(nil), // 1: ProbeResponse
-	nil,                   // 2: ProbeRequest.HeadersEntry
+	(*AgentRequest)(nil),  // 0: AgentRequest
+	(*AgentResponse)(nil), // 1: AgentResponse
+	nil,                   // 2: AgentRequest.HeadersEntry
 }
 var file_controller_proto_depIdxs = []int32{
-	2, // 0: ProbeRequest.headers:type_name -> ProbeRequest.HeadersEntry
-	0, // 1: ControllerService.Connect:input_type -> ProbeRequest
-	1, // 2: ControllerService.Connect:output_type -> ProbeResponse
+	2, // 0: AgentRequest.headers:type_name -> AgentRequest.HeadersEntry
+	0, // 1: ControllerService.Connect:input_type -> AgentRequest
+	1, // 2: ControllerService.Connect:output_type -> AgentResponse
 	2, // [2:3] is the sub-list for method output_type
 	1, // [1:2] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

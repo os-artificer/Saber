@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 saber authors.
+ * Copyright 2025 Saber authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package config
 
 var Cfg = Configuration{
-	Name:       "Probe",
+	Name:       "Agent",
 	Version:    "v1.0.0",
 	Discovery:  DiscoveryConfig{},
 	Controller: ControllerConfig{},
@@ -68,7 +68,7 @@ type DataEngine struct {
 // EngineConfig engine config
 type EngineConfig struct {
 	Script ScriptEngine `yaml:"script"`
-	Data   DataEngine  `yaml:"data"`
+	Data   DataEngine   `yaml:"data"`
 }
 
 // LogConfig log config
@@ -79,7 +79,7 @@ type LogConfig struct {
 	MaxBackupAge   int    `yaml:"maxBackupAge"`
 }
 
-// Configuration probe's configuration
+// Configuration agent's configuration
 type Configuration struct {
 	Name       string           `yaml:"name"`
 	Version    string           `yaml:"version"`

@@ -1,5 +1,5 @@
 //*
-// Copyright 2025 saber authors.
+// Copyright 2025 Saber authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ControllerServiceClient interface {
-	Connect(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProbeRequest, ProbeResponse], error)
+	Connect(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AgentRequest, AgentResponse], error)
 }
 
 type controllerServiceClient struct {
@@ -52,24 +52,24 @@ func NewControllerServiceClient(cc grpc.ClientConnInterface) ControllerServiceCl
 	return &controllerServiceClient{cc}
 }
 
-func (c *controllerServiceClient) Connect(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProbeRequest, ProbeResponse], error) {
+func (c *controllerServiceClient) Connect(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AgentRequest, AgentResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ControllerService_ServiceDesc.Streams[0], ControllerService_Connect_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[ProbeRequest, ProbeResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[AgentRequest, AgentResponse]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ControllerService_ConnectClient = grpc.BidiStreamingClient[ProbeRequest, ProbeResponse]
+type ControllerService_ConnectClient = grpc.BidiStreamingClient[AgentRequest, AgentResponse]
 
 // ControllerServiceServer is the server API for ControllerService service.
 // All implementations must embed UnimplementedControllerServiceServer
 // for forward compatibility.
 type ControllerServiceServer interface {
-	Connect(grpc.BidiStreamingServer[ProbeRequest, ProbeResponse]) error
+	Connect(grpc.BidiStreamingServer[AgentRequest, AgentResponse]) error
 	mustEmbedUnimplementedControllerServiceServer()
 }
 
@@ -80,7 +80,7 @@ type ControllerServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedControllerServiceServer struct{}
 
-func (UnimplementedControllerServiceServer) Connect(grpc.BidiStreamingServer[ProbeRequest, ProbeResponse]) error {
+func (UnimplementedControllerServiceServer) Connect(grpc.BidiStreamingServer[AgentRequest, AgentResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Connect not implemented")
 }
 func (UnimplementedControllerServiceServer) mustEmbedUnimplementedControllerServiceServer() {}
@@ -105,11 +105,11 @@ func RegisterControllerServiceServer(s grpc.ServiceRegistrar, srv ControllerServ
 }
 
 func _ControllerService_Connect_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ControllerServiceServer).Connect(&grpc.GenericServerStream[ProbeRequest, ProbeResponse]{ServerStream: stream})
+	return srv.(ControllerServiceServer).Connect(&grpc.GenericServerStream[AgentRequest, AgentResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ControllerService_ConnectServer = grpc.BidiStreamingServer[ProbeRequest, ProbeResponse]
+type ControllerService_ConnectServer = grpc.BidiStreamingServer[AgentRequest, AgentResponse]
 
 // ControllerService_ServiceDesc is the grpc.ServiceDesc for ControllerService service.
 // It's only intended for direct use with grpc.RegisterService,

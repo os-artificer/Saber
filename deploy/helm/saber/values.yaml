@@ -1,5 +1,5 @@
 # Default values for saber
-# Deploy controller, transfer, and probe in Kubernetes
+# Deploy controller, transfer, and agent in Kubernetes
 
 image:
   repository: saber/saber
@@ -50,13 +50,13 @@ transfer:
   nodeSelector: {}
   tolerations: []
 
-# Probe: connects to controller and transfer, reports host metrics
-probe:
+# Agent: connects to controller and transfer, reports host metrics
+agent:
   enabled: true
   daemonSet: false
   replicaCount: 1
   config:
-    name: probe
+    name: agent
     version: v1.0.0
     controller:
       endpoints: ""   # set by chart to Release-controller:26688

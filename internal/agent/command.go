@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 saber authors.
+ * Copyright 2025 Saber authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,30 +14,18 @@
  * limitations under the License.
 **/
 
-package config_test
+package agent
 
 import (
-	"os"
-	"testing"
+	"os-artificer/saber/pkg/version"
 
-	"os-artificer/saber/internal/probe/config"
-
-	"gopkg.in/yaml.v2"
+	"github.com/spf13/cobra"
 )
 
-const (
-	probeConfigFile = "../../../etc/probe.yaml"
-)
-
-func TestConfig(t *testing.T) {
-	data, err := os.ReadFile(probeConfigFile)
-	if err != nil {
-		t.Fatalf("failed to read probe.yaml. errmsg:%v", err)
-	}
-
-	if err = yaml.Unmarshal(data, &config.Cfg); err != nil {
-		t.Fatalf("failed to unmarshal yaml. errmsg:%v", err)
-	}
-
-	t.Logf("cfg:%v", config.Cfg)
+var VersionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print Version Information",
+	Run: func(cmd *cobra.Command, args []string) {
+		version.Print("saber Agent")
+	},
 }

@@ -1,4 +1,4 @@
-name: probe
+name: agent
 version: v1.0.0
 
 discovery:
@@ -26,7 +26,7 @@ engine:
     sendMode: random
 
 log:
-  fileName: /var/log/geekeros/saber/probe.log
+  fileName: /var/log/geekeros/saber/agent.log
   fileSize: 100
   maxBackupCount: 10
   maxBackupAge: 10

@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 saber authors.
+ * Copyright 2025 Saber authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import (
 type Connection struct {
 	ClientID   string
 	Stream     proto.ControllerService_ConnectServer
-	SendChan   chan *proto.ProbeResponse
+	SendChan   chan *proto.AgentResponse
 	LastActive time.Time
 	Metadata   map[string]string
 	mu         sync.RWMutex

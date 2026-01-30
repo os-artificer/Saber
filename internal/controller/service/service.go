@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 saber authors.
+ * Copyright 2025 Saber authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,7 +99,7 @@ func (s *Service) Connect(stream proto.ControllerService_ConnectServer) error {
 	conn := &Connection{
 		ClientID:   clientID,
 		Stream:     stream,
-		SendChan:   make(chan *proto.ProbeResponse, 100),
+		SendChan:   make(chan *proto.AgentResponse, 100),
 		LastActive: time.Now(),
 		Metadata:   metadata,
 	}
