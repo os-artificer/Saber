@@ -1,0 +1,18 @@
+saber has been installed.
+
+Components:
+  - controller: gRPC server on port 26688
+  - transfer:   gRPC server on port 26689 (writes to Kafka when configured)
+  - probe:      connects to controller and transfer, reports host metrics
+
+To list pods and services:
+  kubectl get svc,pods -l app.kubernetes.io/name=saber -n {{ .Release.Namespace }}
+
+Controller is available at {{ .Release.Name }}-controller:26688 (cluster-internal).
+Transfer is available at {{ .Release.Name }}-transfer:26689 (cluster-internal).
+
+To expose controller or transfer outside the cluster, configure an Ingress or LoadBalancer
+for the corresponding Service.
+
+To uninstall:
+  helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}

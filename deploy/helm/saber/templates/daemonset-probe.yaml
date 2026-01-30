@@ -1,0 +1,47 @@
+{{- if and .Values.probe.enabled .Values.probe.daemonSet }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "saber.probe.fullname" . }}
+  labels:
+    {{- include "saber.labels" . | nindent 4 }}
+    app.kubernetes.io/component: probe
+spec:
+  selector:
+    matchLabels:
+      {{- include "saber.probe.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "saber.probe.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: probe
+          image: {{ include "saber.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /app/probe
+          args:
+            - -c
+            - /config/probe.yaml
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+          {{- with .Values.probe.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "saber.probe.fullname" . }}
+      {{- with .Values.probe.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.probe.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

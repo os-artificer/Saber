@@ -1,0 +1,25 @@
+{{- if .Values.probe.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "saber.probe.fullname" . }}
+  labels:
+    {{- include "saber.labels" . | nindent 4 }}
+    app.kubernetes.io/component: probe
+data:
+  probe.yaml: |
+    name: {{ .Values.probe.config.name | quote }}
+    version: {{ .Values.probe.config.version | quote }}
+    controller:
+      endpoints: {{ include "saber.controller.fullname" . }}:26688
+      syncMetaInterval: 30
+    transfer:
+      endpoints: {{ include "saber.transfer.fullname" . }}:26689
+    collector:
+      interval: {{ .Values.probe.config.collector.interval }}
+    log:
+      fileName: {{ .Values.probe.config.log.fileName | quote }}
+      fileSize: {{ .Values.probe.config.log.fileSize }}
+      maxBackupCount: {{ .Values.probe.config.log.maxBackupCount }}
+      maxBackupAge: {{ .Values.probe.config.log.maxBackupAge }}
+{{- end }}
