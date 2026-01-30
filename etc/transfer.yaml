@@ -1,0 +1,21 @@
+name: transfer
+version: v1.0.0
+
+discovery:
+  etcdEndpoint: http://etcd-server:2379
+  etcdUser: root
+  etcdPassword: wktest
+  dialTimeout: 5s
+  autoSyncInterval: 10s
+  dialKeepAliveTime: 5s
+  dialKeepAliveTimeout: 5s
+  registryRootKeyPrefix: /os-artificer/saber
+
+service:
+  listenAddress: tcp://127.0.0.1:26689
+
+log:
+  path: /opt/os-artificer/saber/log/transfer.log
+  maxFileSize: 100
+  maxBackupCount: 10
+  maxBackupAge: 10

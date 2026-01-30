@@ -1,0 +1,16 @@
+name: controller
+version: v1.0.0
+
+discovery:
+  endpoints: 127.0.0.1:26688
+  user: root
+  password: 123456
+
+service:
+  listenAddress: 127.0.0.1:26689
+
+log:
+  fileName: /var/log/geekeros/saber/controller.log
+  fileSize: 100
+  maxBackupCount: 10
+  maxBackupAge: 10

@@ -1,0 +1,29 @@
+name: agent
+version: v1.0.0
+
+discovery:
+  endpoints: 127.0.0.1:26688
+  syncMetaInterval: 30
+
+controller:
+  endpoints: 127.0.0.1:26688
+  syncMetaInterval: 30
+
+transfer:
+  endpoints: 127.0.0.1:26689
+
+engine:
+  script:
+    enable: true
+    concurrency: 10
+    tmpDir: /opt/ylg/saber/tmp/scripts
+
+  data:
+    enable: true
+    sendMode: random
+
+log:
+  fileName: /var/log/geekeros/saber/agent.log
+  fileSize: 100
+  maxBackupCount: 10
+  maxBackupAge: 10
