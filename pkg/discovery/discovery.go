@@ -52,11 +52,11 @@ func (d *Discovery) Watch(ctx context.Context, key string) (chan *Event, error) 
 		for {
 			select {
 			case <-d.exit:
-				logger.Info("exit the watcher. key:%s", key)
+				logger.Infof("exit the watcher. key:%s", key)
 				return
 
 			case <-ctx.Done():
-				logger.Info("exit the watcher. key:%s", key)
+				logger.Infof("exit the watcher. key:%s", key)
 				return
 
 			case watchResp := <-watchChan:
@@ -103,11 +103,11 @@ func (d *Discovery) WatchWithPrefix(ctx context.Context, keyPrefix string) (chan
 		for {
 			select {
 			case <-d.exit:
-				logger.Info("exit the watcher. key prefix:%s", keyPrefix)
+				logger.Infof("exit the watcher. key prefix:%s", keyPrefix)
 				return
 
 			case <-ctx.Done():
-				logger.Info("exit the watcher. key prefix:%s", keyPrefix)
+				logger.Infof("exit the watcher. key prefix:%s", keyPrefix)
 				return
 
 			case watchResp := <-watchChan:

@@ -48,7 +48,7 @@ func (k *KafkaSink) Write(ctx context.Context, req *proto.TransferRequest) error
 		Key:   key,
 		Value: req.Payload,
 	}); err != nil {
-		logger.Warn("write to kafka failed: %v", err)
+		logger.Warnf("write to kafka failed: %v", err)
 		return err
 	}
 	return nil

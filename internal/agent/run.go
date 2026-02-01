@@ -24,9 +24,8 @@ import (
 	"syscall"
 	"time"
 
-	"os-artificer/saber/internal/agent/client"
-	"os-artificer/saber/internal/agent/collector"
 	"os-artificer/saber/internal/agent/config"
+	"os-artificer/saber/internal/agent/reporter"
 	"os-artificer/saber/pkg/logger"
 
 	"github.com/spf13/cobra"
@@ -46,9 +45,9 @@ func Run(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	cfg := config.Cfg
 
-	transferClient, err := client.NewTransferClient(ctx, cfg.Transfer.Endpoints, cfg.Name+"-"+cfg.Version)
+	transferClient, err := reporter.NewTransferClient(ctx, cfg.Transfer.Endpoints, cfg.Name+"-"+cfg.Version)
 	if err != nil {
-		logger.Fatal("Failed to create transfer client: %v", err)
+		logger.Fatalf("Failed to create transfer client: %v", err)
 	}
 
 	setupGracefulShutdown()
@@ -59,7 +58,7 @@ func Run(cmd *cobra.Command, args []string) error {
 	go func() {
 		defer wg.Done()
 		if err := transferClient.Run(); err != nil {
-			logger.Warn("Transfer client exited: %v", err)
+			logger.Warnf("Transfer client exited: %v", err)
 		}
 	}()
 
@@ -75,15 +74,15 @@ func Run(cmd *cobra.Command, args []string) error {
 		defer ticker.Stop()
 
 		for range ticker.C {
-			payload, err := collector.Collect()
-			if err != nil {
-				logger.Warn("Collect metrics failed: %v", err)
-				continue
-			}
+			// payload, err := collector.Collect()
+			// if err != nil {
+			// 	logger.Warnf("Collect metrics failed: %v", err)
+			// 	continue
+			// }
 
-			if err := transferClient.SendMessage(payload); err != nil {
-				logger.Warn("Send metrics to transfer failed: %v", err)
-			}
+			// if err := transferClient.SendMessage(payload); err != nil {
+			// 	logger.Warnf("Send metrics to transfer failed: %v", err)
+			// }
 		}
 	}()
 

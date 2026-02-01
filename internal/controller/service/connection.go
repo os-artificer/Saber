@@ -75,7 +75,7 @@ func (c *Connection) receiveMessages(ctx context.Context) {
 
 			c.updateLastActive()
 
-			logger.Debug("Received from %s: %v\n", c.ClientID, msg.GetPayload())
+			logger.Debugf("Received from %s: %v\n", c.ClientID, msg.GetPayload())
 		}
 	}
 }

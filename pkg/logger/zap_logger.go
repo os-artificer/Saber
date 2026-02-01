@@ -27,23 +27,23 @@ type ZapLogger struct {
 	sugaredLogger *zap.SugaredLogger
 }
 
-func (z *ZapLogger) Debug(format string, args ...interface{}) {
+func (z *ZapLogger) Debugf(format string, args ...any) {
 	z.sugaredLogger.Debugf(format, args...)
 }
 
-func (z *ZapLogger) Info(format string, args ...interface{}) {
+func (z *ZapLogger) Infof(format string, args ...any) {
 	z.sugaredLogger.Infof(format, args...)
 }
 
-func (z *ZapLogger) Warn(format string, args ...interface{}) {
+func (z *ZapLogger) Warnf(format string, args ...any) {
 	z.sugaredLogger.Warnf(format, args...)
 }
 
-func (z *ZapLogger) Error(format string, args ...interface{}) {
+func (z *ZapLogger) Errorf(format string, args ...any) {
 	z.sugaredLogger.Errorf(format, args...)
 }
 
-func (z *ZapLogger) Fatal(format string, args ...interface{}) {
+func (z *ZapLogger) Fatalf(format string, args ...any) {
 	z.sugaredLogger.Fatalf(format, args...)
 }
 

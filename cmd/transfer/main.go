@@ -35,7 +35,7 @@ func main() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.AddCommand(transfer.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {
-		logger.Error("failed to start transfer server. errmsg:%s", err.Error())
+		logger.Errorf("failed to start transfer server. errmsg:%s", err.Error())
 		return
 	}
 

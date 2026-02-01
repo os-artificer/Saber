@@ -23,11 +23,11 @@ import "log"
 // without interfering with the operational logic
 // of business code.
 type Logger interface {
-	Debug(format string, args ...any)
-	Info(format string, args ...any)
-	Warn(format string, args ...any)
-	Error(format string, args ...any)
-	Fatal(format string, args ...any)
+	Debugf(format string, args ...any)
+	Infof(format string, args ...any)
+	Warnf(format string, args ...any)
+	Errorf(format string, args ...any)
+	Fatalf(format string, args ...any)
 }
 
 type Level string
@@ -55,47 +55,47 @@ func SetLogger(log Logger) {
 	l = log
 }
 
-func Debug(format string, args ...interface{}) {
+func Debugf(format string, args ...any) {
 	if l == nil {
 		log.Printf(format, args...)
 		return
 	}
 
-	l.Debug(format, args...)
+	l.Debugf(format, args...)
 }
 
-func Info(format string, args ...interface{}) {
+func Infof(format string, args ...any) {
 	if l == nil {
 		log.Printf(format, args...)
 		return
 	}
 
-	l.Info(format, args...)
+	l.Infof(format, args...)
 }
 
-func Warn(format string, args ...interface{}) {
+func Warnf(format string, args ...any) {
 	if l == nil {
 		log.Printf(format, args...)
 		return
 	}
 
-	l.Warn(format, args...)
+	l.Warnf(format, args...)
 }
 
-func Error(format string, args ...interface{}) {
+func Errorf(format string, args ...any) {
 	if l == nil {
 		log.Printf(format, args...)
 		return
 	}
 
-	l.Error(format, args...)
+	l.Errorf(format, args...)
 }
 
-func Fatal(format string, args ...interface{}) {
+func Fatalf(format string, args ...any) {
 	if l == nil {
 		log.Fatalf(format, args...)
 		return
 	}
 
-	l.Fatal(format, args...)
+	l.Fatalf(format, args...)
 }

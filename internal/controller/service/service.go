@@ -150,6 +150,6 @@ func (s *Service) Run() error {
 		return err
 	}
 
-	logger.Info("Server listening at %v", lis.Addr())
+	logger.Infof("Server listening at %v", lis.Addr())
 	return svr.Serve(lis)
 }

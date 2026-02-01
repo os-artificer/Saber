@@ -36,7 +36,7 @@ func main() {
 	rootCmd.AddCommand(controller.VersionCmd)
 
 	if err := rootCmd.Execute(); err != nil {
-		logger.Error("failed to start controller server. errmsg:%s", err.Error())
+		logger.Errorf("failed to start controller server. errmsg:%s", err.Error())
 		return
 	}
 

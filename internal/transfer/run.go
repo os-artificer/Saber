@@ -85,7 +85,7 @@ func loadTransferConfig() (address string, out sink.Sink, closeSink func()) {
 
 	closeSink = func() {
 		if err := out.Close(); err != nil {
-			logger.Warn("sink close: %v", err)
+			logger.Warnf("sink close: %v", err)
 		}
 	}
 
