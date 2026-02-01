@@ -14,7 +14,7 @@
  * limitations under the License.
 **/
 
-package client
+package reporter
 
 import (
 	"context"
@@ -48,6 +48,7 @@ type TransferClient struct {
 	reconnectAttempts    int
 }
 
+// NewTransferClient creates a new transfer client.
 func NewTransferClient(ctx context.Context, serverAddr string, clientId string) (*TransferClient, error) {
 	kacp := keepalive.ClientParameters{
 		Time:                constant.DefaultClientPingTime,
@@ -115,6 +116,7 @@ func (c *TransferClient) handleDisconnect() {
 	}
 
 	c.reconnecting = true
+	c.stream = nil // so SendMessage returns "stream not initialized" until reconnect succeeds
 	c.mu.Unlock()
 
 	defer func() {
@@ -130,7 +132,7 @@ func (c *TransferClient) handleDisconnect() {
 	c.mu.Unlock()
 
 	if maxAttempts > 0 && reconnectAttempts > maxAttempts {
-		logger.Warn("Max reconnect attempts (%d) reached, giving up", maxAttempts)
+		logger.Warnf("Max reconnect attempts (%d) reached, giving up", maxAttempts)
 		return
 	}
 
@@ -140,17 +142,25 @@ func (c *TransferClient) handleDisconnect() {
 	// Add some randomness to avoid the stampede effect.
 	backoffInterval = backoffInterval + time.Duration(rand.Int63n(int64(backoffInterval/2)))
 
-	logger.Info("Reconnect attempt %d in %v", reconnectAttempts, backoffInterval)
+	logger.Infof("Reconnect attempt %d in %v", reconnectAttempts, backoffInterval)
 	time.Sleep(backoffInterval)
 
+	// Do not attempt connect if client was closed during backoff
+	c.mu.Lock()
+	closed := c.closed
+	c.mu.Unlock()
+	if closed {
+		return
+	}
+
 	// retry
-	logger.Info("Attempting to reconnect...")
+	logger.Infof("Attempting to reconnect...")
 	err := c.connect()
 	if err != nil {
-		logger.Warn("Reconnect failed: %v", err)
+		logger.Warnf("Reconnect failed: %v", err)
 		go c.handleDisconnect()
 	} else {
-		logger.Info("Reconnect successful")
+		logger.Infof("Reconnect successful")
 	}
 }
 
@@ -169,7 +179,7 @@ func (c *TransferClient) monitorConnection() {
 			c.mu.RUnlock()
 			state := c.GetConnectionState()
 			if state == connectivity.TransientFailure || state == connectivity.Shutdown {
-				logger.Warn("Connection state: %s, starting reconnect", state.String())
+				logger.Warnf("Connection state: %s, starting reconnect", state.String())
 				go c.handleDisconnect()
 				return
 			}
@@ -184,21 +194,22 @@ func (c *TransferClient) sendConnectionEstablished() {
 	msg := &proto.TransferRequest{}
 
 	c.mu.RLock()
-	defer c.mu.RUnlock()
+	stream := c.stream
+	c.mu.RUnlock()
 
-	if c.stream == nil {
+	if stream == nil {
 		return
 	}
 
-	if err := c.stream.Send(msg); err != nil {
-		logger.Error("Error sending connection established message: %v", err)
+	if err := stream.Send(msg); err != nil {
+		logger.Errorf("Error sending connection established message: %v", err)
 	}
 }
 
 func (c *TransferClient) Run() error {
 	err := c.connect()
 	if err != nil {
-		logger.Error("failed to connect remote server. errmsg:%v", err)
+		logger.Errorf("failed to connect remote server. errmsg:%v", err)
 		return err
 	}
 
@@ -209,22 +220,36 @@ func (c *TransferClient) Run() error {
 
 func (c *TransferClient) SendMessage(content []byte) error {
 	c.mu.RLock()
-	defer c.mu.RUnlock()
+	closed := c.closed
+	stream := c.stream
+	clientId := c.clientId
+	c.mu.RUnlock()
 
-	if c.closed {
+	if closed {
 		return fmt.Errorf("client is closed")
 	}
 
-	if c.stream == nil {
+	if stream == nil {
 		return fmt.Errorf("stream not initialized")
 	}
 
 	msg := &proto.TransferRequest{
-		ClientID: c.clientId,
+		ClientID: clientId,
 		Payload:  content,
 	}
 
-	return c.stream.Send(msg)
+	err := stream.Send(msg)
+	if err != nil {
+		// Trigger reconnect on send failure so we recover without waiting for monitor tick
+		c.mu.Lock()
+		if !c.closed && !c.reconnecting {
+			c.stream = nil
+			go c.handleDisconnect()
+		}
+		c.mu.Unlock()
+		return err
+	}
+	return nil
 }
 
 func (c *TransferClient) Close() {

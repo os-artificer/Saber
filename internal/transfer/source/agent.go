@@ -70,7 +70,7 @@ func (p *AgentSource) Run(ctx context.Context, h Handler) error {
 		return err
 	}
 
-	logger.Info("Server listening at %v", lis.Addr())
+	logger.Infof("Server listening at %v", lis.Addr())
 
 	go func() {
 		<-ctx.Done()
@@ -97,20 +97,20 @@ func (s *pushDataServer) PushData(stream proto.TransferService_PushDataServer) e
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Error("service exited due to canceled context, client-id: %s", clientID)
+			logger.Errorf("service exited due to canceled context, client-id: %s", clientID)
 			return nil
 		default:
 			req, err := stream.Recv()
 			if err == io.EOF {
-				logger.Error("receiver server exited, client-id(%s), errmsg: %v", clientID, err)
+				logger.Errorf("receiver server exited, client-id(%s), errmsg: %v", clientID, err)
 				return nil
 			}
 			if err != nil {
-				logger.Error("receiver server exited, client-id(%s), errmsg: %v", clientID, err)
+				logger.Errorf("receiver server exited, client-id(%s), errmsg: %v", clientID, err)
 				return nil
 			}
 			if err := s.handler.OnTransferRequest(req); err != nil {
-				logger.Warn("handle the client event data failed, client-id: %s, errmsg: %v", clientID, err)
+				logger.Warnf("handle the client event data failed, client-id: %s, errmsg: %v", clientID, err)
 			}
 		}
 	}

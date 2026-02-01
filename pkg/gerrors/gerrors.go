@@ -48,7 +48,7 @@ func New(c Code, msg string) *GError {
 	return &GError{code: c, message: msg}
 }
 
-func Newf(c Code, format string, args ...interface{}) *GError {
+func Newf(c Code, format string, args ...any) *GError {
 	msg := fmt.Sprintf(format, args...)
 	return &GError{code: c, message: msg}
 }

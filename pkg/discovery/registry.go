@@ -75,11 +75,11 @@ func (r *Registry) monitorKeepalive(ctx context.Context) {
 	for {
 		select {
 		case <-r.exit:
-			logger.Info("exit registry monitor keepalive")
+			logger.Infof("exit registry monitor keepalive")
 			return
 
 		case <-ctx.Done():
-			logger.Info("exit registry monitor keepalive")
+			logger.Infof("exit registry monitor keepalive")
 			return
 
 		case _, ok := <-r.keepAliveChan:
@@ -107,11 +107,11 @@ func (r *Registry) checkLeaseTTL(ctx context.Context) {
 	for {
 		select {
 		case <-r.exit:
-			logger.Info("exit registry check lease ttl")
+			logger.Infof("exit registry check lease ttl")
 			return
 
 		case <-ctx.Done():
-			logger.Info("exit registry check lease ttl")
+			logger.Infof("exit registry check lease ttl")
 			return
 
 		case <-ticker.C:
