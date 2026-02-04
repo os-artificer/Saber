@@ -18,16 +18,17 @@ package harvester
 
 import (
 	"context"
-	"runtime/debug"
 	"sync"
 
 	"os-artificer/saber/pkg/logger"
+	"os-artificer/saber/pkg/tools"
 )
 
 type Harvester struct {
 	plugins map[string]Plugin
 	mu      sync.RWMutex
-	wg      sync.WaitGroup
+	runWg   sync.WaitGroup // used only by Run()
+	closeWg sync.WaitGroup // used only by Close(); separate to avoid WaitGroup contract violation
 }
 
 // NewHarvester creates a new harvester with the given plugins.
@@ -47,22 +48,18 @@ func (h *Harvester) Run(ctx context.Context) error {
 	defer h.mu.RUnlock()
 
 	for _, plugin := range h.plugins {
-		h.wg.Add(1)
-		go func(plugin Plugin) {
-			defer h.wg.Done()
-			defer func() {
-				if r := recover(); r != nil {
-					logger.Errorf("plugin %s panic in Run: %v\n%s", plugin.Name(), r, string(debug.Stack()))
-				}
-			}()
+		h.runWg.Add(1)
+		plugin := plugin
+		tools.Go(func() {
+			defer h.runWg.Done()
 
 			if err := plugin.Run(ctx); err != nil {
 				logger.Errorf("failed to run plugin: %s, errmsg: %v", plugin.Name(), err)
 			}
-		}(plugin)
+		})
 	}
 
-	h.wg.Wait()
+	h.runWg.Wait()
 	return nil
 }
 
@@ -71,21 +68,17 @@ func (h *Harvester) Close() error {
 	defer h.mu.RUnlock()
 
 	for _, plugin := range h.plugins {
-		h.wg.Add(1)
-		go func(plugin Plugin) {
-			defer h.wg.Done()
-			defer func() {
-				if r := recover(); r != nil {
-					logger.Errorf("plugin %s panic in Close: %v\n%s", plugin.Name(), r, string(debug.Stack()))
-				}
-			}()
+		h.closeWg.Add(1)
+		plugin := plugin
+		tools.Go(func() {
+			defer h.closeWg.Done()
 
 			if err := plugin.Close(); err != nil {
 				logger.Errorf("failed to close plugin: %s, errmsg: %v", plugin.Name(), err)
 			}
-		}(plugin)
+		})
 	}
 
-	h.wg.Wait()
+	h.closeWg.Wait()
 	return nil
 }

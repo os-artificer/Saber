@@ -22,7 +22,6 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 
 	"os-artificer/saber/internal/agent/config"
 	"os-artificer/saber/internal/agent/reporter"
@@ -59,30 +58,6 @@ func Run(cmd *cobra.Command, args []string) error {
 		defer wg.Done()
 		if err := transferClient.Run(); err != nil {
 			logger.Warnf("Transfer client exited: %v", err)
-		}
-	}()
-
-	// Host metrics collector: periodically collect and send via transfer client
-	interval := time.Duration(cfg.Collector.Interval) * time.Second
-	if interval <= 0 {
-		interval = 10 * time.Second
-	}
-
-	go func() {
-		time.Sleep(interval) // wait for transfer stream to be ready
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
-
-		for range ticker.C {
-			// payload, err := collector.Collect()
-			// if err != nil {
-			// 	logger.Warnf("Collect metrics failed: %v", err)
-			// 	continue
-			// }
-
-			// if err := transferClient.SendMessage(payload); err != nil {
-			// 	logger.Warnf("Send metrics to transfer failed: %v", err)
-			// }
 		}
 	}()
 
