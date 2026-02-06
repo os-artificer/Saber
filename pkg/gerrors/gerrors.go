@@ -16,7 +16,10 @@
 
 package gerrors
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // Code global error code
 type Code int
@@ -41,6 +44,7 @@ const (
 type GError struct {
 	code    Code
 	message string
+	cause   error // optional; set by NewE for error chain (Unwrap)
 }
 
 // New create a new GError object
@@ -57,7 +61,7 @@ func NewE(c Code, err error) *GError {
 	if err == nil {
 		return nil
 	}
-	return &GError{code: c, message: err.Error()}
+	return &GError{code: c, message: err.Error(), cause: err}
 }
 
 // Code only return error code
@@ -73,4 +77,30 @@ func (g *GError) Message() string {
 // Error error interface method
 func (g *GError) Error() string {
 	return fmt.Sprintf("code:%d, errmsg:%s", g.code, g.message)
+}
+
+// Unwrap returns the underlying error if any, for errors.Is/errors.As compatibility.
+func (g *GError) Unwrap() error {
+	return g.cause
+}
+
+// Is reports whether the target is considered a match for this error.
+// When target is *GError, matches by Code equality so that e.g.
+// errors.Is(err, gerrors.New(gerrors.NotFound, "")) matches any GError with NotFound.
+func (g *GError) Is(target error) bool {
+	t, ok := target.(*GError)
+	if !ok {
+		return false
+	}
+	return g.code == t.code
+}
+
+// Is reports whether any error in err's chain matches target. Behavior is the same as errors.Is.
+func Is(err, target error) bool {
+	return errors.Is(err, target)
+}
+
+// As finds the first error in err's chain that matches target and assigns it. Behavior is the same as errors.As.
+func As(err error, target any) bool {
+	return errors.As(err, target)
 }

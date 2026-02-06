@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"os-artificer/saber/internal/agent/config"
 	"os-artificer/saber/pkg/constant"
 	"os-artificer/saber/pkg/logger"
 	"os-artificer/saber/pkg/proto"
@@ -33,7 +34,17 @@ import (
 	"google.golang.org/grpc/keepalive"
 )
 
-type TransferClient struct {
+var _ Reporter = (*TransferReporter)(nil)
+
+func init() {
+	RegisterReporter("transfer", func(ctx context.Context, opts any) (Reporter, error) {
+		cfg := opts.(*config.Configuration)
+		return NewTransferReporter(ctx, cfg.Transfer.Endpoints, cfg.Name+"-"+cfg.Version)
+	})
+}
+
+// TransferReporter is the reporter for transfer.
+type TransferReporter struct {
 	conn                 *grpc.ClientConn
 	client               proto.TransferServiceClient
 	stream               proto.TransferService_PushDataClient
@@ -48,8 +59,8 @@ type TransferClient struct {
 	reconnectAttempts    int
 }
 
-// NewTransferClient creates a new transfer client.
-func NewTransferClient(ctx context.Context, serverAddr string, clientId string) (*TransferClient, error) {
+// NewTransferReporter creates a new transfer reporter.
+func NewTransferReporter(ctx context.Context, serverAddr string, clientId string) (*TransferReporter, error) {
 	kacp := keepalive.ClientParameters{
 		Time:                constant.DefaultClientPingTime,
 		Timeout:             constant.DefaultPingTimeout,
@@ -72,7 +83,7 @@ func NewTransferClient(ctx context.Context, serverAddr string, clientId string) 
 
 	ctxCancel, cancel := context.WithCancel(ctx)
 
-	return &TransferClient{
+	return &TransferReporter{
 		conn:                 conn,
 		client:               proto.NewTransferServiceClient(conn),
 		ctx:                  ctxCancel,
@@ -83,7 +94,7 @@ func NewTransferClient(ctx context.Context, serverAddr string, clientId string) 
 	}, nil
 }
 
-func (c *TransferClient) connect() error {
+func (c *TransferReporter) connect() error {
 	c.mu.Lock()
 	if c.closed {
 		c.mu.Unlock()
@@ -108,7 +119,7 @@ func (c *TransferClient) connect() error {
 	return nil
 }
 
-func (c *TransferClient) handleDisconnect() {
+func (c *TransferReporter) handleDisconnect() {
 	c.mu.Lock()
 	if c.closed || c.reconnecting {
 		c.mu.Unlock()
@@ -164,7 +175,7 @@ func (c *TransferClient) handleDisconnect() {
 	}
 }
 
-func (c *TransferClient) monitorConnection() {
+func (c *TransferReporter) monitorConnection() {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
@@ -190,7 +201,7 @@ func (c *TransferClient) monitorConnection() {
 	}
 }
 
-func (c *TransferClient) sendConnectionEstablished() {
+func (c *TransferReporter) sendConnectionEstablished() {
 	msg := &proto.TransferRequest{}
 
 	c.mu.RLock()
@@ -206,7 +217,7 @@ func (c *TransferClient) sendConnectionEstablished() {
 	}
 }
 
-func (c *TransferClient) Run() error {
+func (c *TransferReporter) Run() error {
 	err := c.connect()
 	if err != nil {
 		logger.Errorf("failed to connect remote server. errmsg:%v", err)
@@ -218,7 +229,7 @@ func (c *TransferClient) Run() error {
 	return c.ctx.Err()
 }
 
-func (c *TransferClient) SendMessage(content []byte) error {
+func (c *TransferReporter) SendMessage(ctx context.Context, content []byte) error {
 	c.mu.RLock()
 	closed := c.closed
 	stream := c.stream
@@ -252,12 +263,12 @@ func (c *TransferClient) SendMessage(content []byte) error {
 	return nil
 }
 
-func (c *TransferClient) Close() {
+func (c *TransferReporter) Close() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if c.closed {
-		return
+		return nil
 	}
 
 	c.closed = true
@@ -267,12 +278,13 @@ func (c *TransferClient) Close() {
 	}
 
 	if c.conn != nil {
-		c.conn.Close()
+		return c.conn.Close()
 	}
+	return nil
 }
 
 // GetConnectionState Get the state of the connection.
-func (c *TransferClient) GetConnectionState() connectivity.State {
+func (c *TransferReporter) GetConnectionState() connectivity.State {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 

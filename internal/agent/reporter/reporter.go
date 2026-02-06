@@ -16,5 +16,45 @@
 
 package reporter
 
-type Reporter struct {
+import (
+	"context"
+	"fmt"
+	"sync"
+)
+
+// Reporter is the interface for data reporters (e.g. transfer, kafka).
+type Reporter interface {
+	SendMessage(ctx context.Context, content []byte) error
+	Run() error
+	Close() error
+}
+
+// ReporterFactory creates a Reporter from options (e.g. *config.Configuration).
+type ReporterFactory func(ctx context.Context, opts any) (Reporter, error)
+
+var (
+	registry   = make(map[string]ReporterFactory)
+	registryMu sync.RWMutex
+)
+
+// RegisterReporter registers a reporter implementation by type name.
+func RegisterReporter(typeName string, factory ReporterFactory) {
+	registryMu.Lock()
+	defer registryMu.Unlock()
+	registry[typeName] = factory
+}
+
+// CreateReporter creates a Reporter by type name and options.
+func CreateReporter(ctx context.Context, typeName string, opts any) (Reporter, error) {
+	registryMu.RLock()
+	factory, ok := registry[typeName]
+	registryMu.RUnlock()
+	if !ok {
+		return nil, errUnknownReporterType(typeName)
+	}
+	return factory(ctx, opts)
+}
+
+func errUnknownReporterType(name string) error {
+	return fmt.Errorf("unknown reporter type: %s", name)
 }

@@ -14,40 +14,40 @@
  * limitations under the License.
 **/
 
-package agent
+package harvester
 
 import (
 	"context"
-	"os"
-	"os/signal"
-	"syscall"
-
-	"os-artificer/saber/internal/agent/config"
-	"os-artificer/saber/pkg/logger"
-
-	"github.com/spf13/cobra"
 )
 
-func setupGracefulShutdown(service *Service) {
-	sigC := make(chan os.Signal, 1)
-	signal.Notify(sigC, syscall.SIGINT, syscall.SIGTERM)
+const filePluginVersion = "1.0.0"
 
-	go func() {
-		<-sigC
-		service.Close()
-		os.Exit(0)
-	}()
+func init() {
+	RegisterPlugin("file", newFilePlugin)
 }
 
-func Run(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
-	cfg := config.Cfg
+// FilePlugin collects data from files.
+type FilePlugin struct {
+	opts any
+}
 
-	svr, err := CreateService(ctx, &cfg)
-	if err != nil {
-		logger.Fatalf("Failed to create service: %v", err)
-	}
+func newFilePlugin(ctx context.Context, opts any) (Plugin, error) {
+	return &FilePlugin{opts: opts}, nil
+}
 
-	setupGracefulShutdown(svr)
-	return svr.Run()
+func (p *FilePlugin) Version() string {
+	return filePluginVersion
+}
+
+func (p *FilePlugin) Name() string {
+	return "file"
+}
+
+func (p *FilePlugin) Run(ctx context.Context) error {
+	<-ctx.Done()
+	return ctx.Err()
+}
+
+func (p *FilePlugin) Close() error {
+	return nil
 }
