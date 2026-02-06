@@ -17,12 +17,14 @@
 package config
 
 var Cfg = Configuration{
-	Name:       "Agent",
-	Version:    "v1.0.0",
-	Discovery:  DiscoveryConfig{},
-	Controller: ControllerConfig{},
-	Transfer:   TransferConfig{},
-	Collector:  CollectorConfig{Interval: 10},
+	Name:         "Agent",
+	Version:      "v1.0.0",
+	ReporterType: "transfer",
+	Discovery:    DiscoveryConfig{},
+	Controller:   ControllerConfig{},
+	Transfer:     TransferConfig{},
+	Harvester:    HarvesterConfig{},
+	Collector:    CollectorConfig{Interval: 10},
 	Engine: EngineConfig{
 		Script: ScriptEngine{},
 		Data:   DataEngine{},
@@ -45,6 +47,17 @@ type ControllerConfig struct {
 // TransferConfig transfer service configuration
 type TransferConfig struct {
 	Endpoints string `yaml:"endpoints"`
+}
+
+// HarvesterPluginEntry config for one harvester plugin
+type HarvesterPluginEntry struct {
+	Name    string                 `yaml:"name"`
+	Options map[string]interface{} `yaml:"options"`
+}
+
+// HarvesterConfig harvester plugins configuration
+type HarvesterConfig struct {
+	Plugins []HarvesterPluginEntry `yaml:"plugins"`
 }
 
 // CollectorConfig host metrics collector configuration
@@ -81,12 +94,14 @@ type LogConfig struct {
 
 // Configuration agent's configuration
 type Configuration struct {
-	Name       string           `yaml:"name"`
-	Version    string           `yaml:"version"`
-	Discovery  DiscoveryConfig  `yaml:"discovery"`
-	Controller ControllerConfig `yaml:"controller"`
-	Transfer   TransferConfig   `yaml:"transfer"`
-	Collector  CollectorConfig  `yaml:"collector"`
-	Engine     EngineConfig     `yaml:"engine"`
-	Log        LogConfig        `yaml:"log"`
+	Name         string            `yaml:"name"`
+	Version      string            `yaml:"version"`
+	ReporterType string            `yaml:"reporterType"`
+	Discovery    DiscoveryConfig   `yaml:"discovery"`
+	Controller   ControllerConfig  `yaml:"controller"`
+	Transfer     TransferConfig    `yaml:"transfer"`
+	Harvester    HarvesterConfig   `yaml:"harvester"`
+	Collector    CollectorConfig   `yaml:"collector"`
+	Engine       EngineConfig      `yaml:"engine"`
+	Log          LogConfig         `yaml:"log"`
 }

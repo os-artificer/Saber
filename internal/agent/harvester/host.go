@@ -14,40 +14,40 @@
  * limitations under the License.
 **/
 
-package agent
+package harvester
 
 import (
 	"context"
-	"os"
-	"os/signal"
-	"syscall"
-
-	"os-artificer/saber/internal/agent/config"
-	"os-artificer/saber/pkg/logger"
-
-	"github.com/spf13/cobra"
 )
 
-func setupGracefulShutdown(service *Service) {
-	sigC := make(chan os.Signal, 1)
-	signal.Notify(sigC, syscall.SIGINT, syscall.SIGTERM)
+const hostPluginVersion = "1.0.0"
 
-	go func() {
-		<-sigC
-		service.Close()
-		os.Exit(0)
-	}()
+func init() {
+	RegisterPlugin("host", newHostPlugin)
 }
 
-func Run(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
-	cfg := config.Cfg
+// HostPlugin collects host metrics/info.
+type HostPlugin struct {
+	opts any
+}
 
-	svr, err := CreateService(ctx, &cfg)
-	if err != nil {
-		logger.Fatalf("Failed to create service: %v", err)
-	}
+func newHostPlugin(ctx context.Context, opts any) (Plugin, error) {
+	return &HostPlugin{opts: opts}, nil
+}
 
-	setupGracefulShutdown(svr)
-	return svr.Run()
+func (p *HostPlugin) Version() string {
+	return hostPluginVersion
+}
+
+func (p *HostPlugin) Name() string {
+	return "host"
+}
+
+func (p *HostPlugin) Run(ctx context.Context) error {
+	<-ctx.Done()
+	return ctx.Err()
+}
+
+func (p *HostPlugin) Close() error {
+	return nil
 }
