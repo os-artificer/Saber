@@ -1,0 +1,21 @@
+name: Agent
+version: v1.0.0
+
+discovery:
+  endpoints: 127.0.0.1:26688
+  syncMetaInterval: 30s
+
+controller:
+  endpoints: 127.0.0.1:26688
+  syncMetaInterval: 30s
+
+reporters:
+  - type: transfer
+    config:
+      endpoints: 127.0.0.1:26689
+
+log:
+  fileName: log/agent.log
+  fileSize: 100
+  maxBackupCount: 10
+  maxBackupAge: 10

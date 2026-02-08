@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "saber.controller.fullname" . }}
+  labels:
+    {{- include "saber.labels" . | nindent 4 }}
+    app.kubernetes.io/component: controller
+data:
+  controller.yaml: |
+    name: {{ .Values.controller.config.name | quote }}
+    version: {{ .Values.controller.config.version | quote }}
+    service:
+      listenAddress: {{ .Values.controller.config.service.listenAddress | quote }}
+    log:
+      fileName: {{ .Values.controller.config.log.fileName | quote }}
+      fileSize: {{ .Values.controller.config.log.fileSize }}
+      maxBackupCount: {{ .Values.controller.config.log.maxBackupCount }}
+      maxBackupAge: {{ .Values.controller.config.log.maxBackupAge }}

@@ -1,0 +1,25 @@
+{{- if .Values.agent.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "saber.agent.fullname" . }}
+  labels:
+    {{- include "saber.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+data:
+  agent.yaml: |
+    name: {{ .Values.agent.config.name | quote }}
+    version: {{ .Values.agent.config.version | quote }}
+    controller:
+      endpoints: {{ include "saber.controller.fullname" . }}:26688
+      syncMetaInterval: 30s
+    transfer:
+      endpoints: {{ include "saber.transfer.fullname" . }}:26689
+    collector:
+      interval: {{ .Values.agent.config.collector.interval }}
+    log:
+      fileName: {{ .Values.agent.config.log.fileName | quote }}
+      fileSize: {{ .Values.agent.config.log.fileSize }}
+      maxBackupCount: {{ .Values.agent.config.log.maxBackupCount }}
+      maxBackupAge: {{ .Values.agent.config.log.maxBackupAge }}
+{{- end }}

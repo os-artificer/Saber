@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "saber.transfer.fullname" . }}
+  labels:
+    {{- include "saber.labels" . | nindent 4 }}
+    app.kubernetes.io/component: transfer
+data:
+  transfer.yaml: |
+    name: {{ .Values.transfer.config.name | quote }}
+    version: {{ .Values.transfer.config.version | quote }}
+    service:
+      listenAddress: {{ .Values.transfer.config.service.listenAddress | quote }}
+    kafka:
+      brokers:
+        {{- range .Values.transfer.config.kafka.brokers }}
+        - {{ . | quote }}
+        {{- end }}
+      topic: {{ .Values.transfer.config.kafka.topic | quote }}
+    log:
+      path: {{ .Values.transfer.config.log.path | quote }}
+      MaxSizeMB: {{ .Values.transfer.config.log.maxFileSize }}
+      Maxbackups: {{ .Values.transfer.config.log.maxBackupCount }}
+      MaxAge: {{ .Values.transfer.config.log.maxBackupAge }}
