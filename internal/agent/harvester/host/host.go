@@ -14,16 +14,19 @@
  * limitations under the License.
 **/
 
-package harvester
+package host
 
 import (
 	"context"
+
+	"os-artificer/saber/internal/agent/harvester/plugin"
+	"os-artificer/saber/pkg/logger"
 )
 
 const hostPluginVersion = "1.0.0"
 
 func init() {
-	RegisterPlugin("host", newHostPlugin)
+	plugin.RegisterPlugin("host", newHostPlugin)
 }
 
 // HostPlugin collects host metrics/info.
@@ -31,7 +34,7 @@ type HostPlugin struct {
 	opts any
 }
 
-func newHostPlugin(ctx context.Context, opts any) (Plugin, error) {
+func newHostPlugin(ctx context.Context, opts any) (plugin.Plugin, error) {
 	return &HostPlugin{opts: opts}, nil
 }
 
@@ -43,9 +46,29 @@ func (p *HostPlugin) Name() string {
 	return "host"
 }
 
-func (p *HostPlugin) Run(ctx context.Context) error {
-	<-ctx.Done()
-	return ctx.Err()
+func (p *HostPlugin) Run(ctx context.Context) (plugin.EventC, error) {
+	eventC := make(plugin.EventC)
+
+	go func() {
+		defer close(eventC)
+
+		for {
+			select {
+			case <-ctx.Done():
+				logger.Infof("host plugin run exited: %s", p.Name())
+				return
+
+			default:
+				eventC <- &plugin.Event{
+					PluginName: p.Name(),
+					EventName:  "host",
+					Data:       nil,
+				}
+			}
+		}
+	}()
+
+	return eventC, nil
 }
 
 func (p *HostPlugin) Close() error {

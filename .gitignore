@@ -21,6 +21,7 @@ profile.cov
 # vendor/
 
 build
+logs
 
 # Go workspace file
 go.work

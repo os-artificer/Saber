@@ -20,20 +20,21 @@ import (
 	"context"
 	"sync"
 
+	"os-artificer/saber/internal/agent/harvester/plugin"
 	"os-artificer/saber/pkg/logger"
 	"os-artificer/saber/pkg/tools"
 )
 
 type Harvester struct {
-	plugins map[string]Plugin
+	plugins map[string]plugin.Plugin
 	mu      sync.RWMutex
 	runWg   sync.WaitGroup // used only by Run()
 	closeWg sync.WaitGroup // used only by Close(); separate to avoid WaitGroup contract violation
 }
 
 // NewHarvester creates a new harvester with the given plugins.
-func NewHarvester(plugins []Plugin) *Harvester {
-	pluginsMap := make(map[string]Plugin)
+func NewHarvester(plugins []plugin.Plugin) *Harvester {
+	pluginsMap := make(map[string]plugin.Plugin)
 	for _, plugin := range plugins {
 		if _, ok := pluginsMap[plugin.Name()]; ok {
 			continue
@@ -50,11 +51,25 @@ func (h *Harvester) Run(ctx context.Context) error {
 	for _, plugin := range h.plugins {
 		h.runWg.Add(1)
 		plugin := plugin
+
 		tools.Go(func() {
 			defer h.runWg.Done()
 
-			if err := plugin.Run(ctx); err != nil {
+			eventC, err := plugin.Run(ctx)
+			if err != nil {
 				logger.Errorf("failed to run plugin: %s, errmsg: %v", plugin.Name(), err)
+				return
+			}
+
+			for {
+				select {
+				case <-ctx.Done():
+					logger.Infof("harvester run exited: %s", plugin.Name())
+					return
+
+				case event := <-eventC:
+					logger.Infof("harvester received event: %s, event: %v", plugin.Name(), event)
+				}
 			}
 		})
 	}

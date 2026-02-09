@@ -17,6 +17,9 @@
 package logger
 
 import (
+	"os"
+	"path/filepath"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -55,19 +58,31 @@ func convertLevel(level Level) zapcore.Level {
 	switch level {
 	case DebugLevel:
 		return zapcore.DebugLevel
+
 	case InfoLevel:
 		return zapcore.InfoLevel
+
 	case ErrorLevel:
 		return zapcore.ErrorLevel
+
 	case FatalLevel:
 		return zapcore.FatalLevel
+
 	default:
 		return zapcore.InfoLevel
 	}
 }
 
-// NewZapLogger create a zap logger
+// NewZapLogger create a zap logger. Creates the log file path and any parent directories if they do not exist.
 func NewZapLogger(config Config) Logger {
+	if config.Filename == "" {
+		config.Filename = "./logs/saber.log"
+	}
+
+	dir := filepath.Dir(config.Filename)
+	if dir != "." {
+		_ = os.MkdirAll(dir, 0755)
+	}
 
 	logRotator := &lumberjack.Logger{
 		Filename:   config.Filename,

@@ -39,9 +39,32 @@ func setupGracefulShutdown(service *Service) {
 	}()
 }
 
+// initLogger initializes the global logger from agent config (pkg/logger).
+func initLogger(cfg *config.LogConfig) error {
+	if cfg == nil {
+		return nil
+	}
+
+	logCfg := logger.Config{
+		Filename:   cfg.FileName,
+		LogLevel:   logger.InfoLevel,
+		MaxSizeMB:  cfg.FileSize,
+		MaxBackups: cfg.MaxBackupCount,
+		MaxAge:     cfg.MaxBackupAge,
+	}
+
+	l := logger.NewZapLogger(logCfg)
+	logger.SetLogger(l)
+	return nil
+}
+
 func Run(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	cfg := config.Cfg
+
+	if err := initLogger(&cfg.Log); err != nil {
+		logger.Fatalf("Failed to init logger: %v", err)
+	}
 
 	svr, err := CreateService(ctx, &cfg)
 	if err != nil {

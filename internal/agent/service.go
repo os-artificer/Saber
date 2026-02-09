@@ -23,6 +23,7 @@ import (
 
 	"os-artificer/saber/internal/agent/config"
 	"os-artificer/saber/internal/agent/harvester"
+	"os-artificer/saber/internal/agent/harvester/plugin"
 	"os-artificer/saber/internal/agent/reporter"
 	"os-artificer/saber/pkg/logger"
 	"os-artificer/saber/pkg/tools"
@@ -86,23 +87,25 @@ func CreateService(ctx context.Context, cfg *config.Configuration) (*Service, er
 	if len(cfg.Reporters) == 0 {
 		return nil, fmt.Errorf("no reporters configured")
 	}
+
 	entry := cfg.Reporters[0]
 	opts := &config.ReporterOpts{
 		Config:       entry.Config,
 		AgentName:    cfg.Name,
 		AgentVersion: cfg.Version,
 	}
+
 	rep, err := reporter.CreateReporter(ctx, entry.Type, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	pluginConfigs := make([]harvester.PluginConfig, 0, len(cfg.Harvester.Plugins))
+	pluginConfigs := make([]plugin.PluginConfig, 0, len(cfg.Harvester.Plugins))
 	for _, e := range cfg.Harvester.Plugins {
-		pluginConfigs = append(pluginConfigs, harvester.PluginConfig{Name: e.Name, Options: e.Options})
+		pluginConfigs = append(pluginConfigs, plugin.PluginConfig{Name: e.Name, Options: e.Options})
 	}
 
-	plugins, err := harvester.CreatePlugins(ctx, pluginConfigs)
+	plugins, err := plugin.CreatePlugins(ctx, pluginConfigs)
 	if err != nil {
 		_ = rep.Close()
 		return nil, err

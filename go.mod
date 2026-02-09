@@ -7,6 +7,7 @@ toolchain go1.24.2
 require (
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/google/uuid v1.6.0
+	github.com/shirou/gopsutil/v4 v4.25.12
 	github.com/segmentio/kafka-go v0.4.47
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.20.1

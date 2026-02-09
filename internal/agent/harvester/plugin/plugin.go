@@ -14,7 +14,7 @@
  * limitations under the License.
 **/
 
-package harvester
+package plugin
 
 import (
 	"context"
@@ -32,11 +32,21 @@ var (
 	ErrPluginUnimplemented = gerrors.New(gerrors.Unimplemented, "plugin is not implemented")
 )
 
+// Event is the event for harvester plugins.
+type Event struct {
+	PluginName string
+	EventName  string
+	Data       any
+}
+
+// EventC is the channel for sending events to harvester plugins.
+type EventC chan *Event
+
 // Plugin is the interface for harvester plugins.
 type Plugin interface {
 	Version() string
 	Name() string
-	Run(ctx context.Context) error
+	Run(ctx context.Context) (EventC, error)
 	Close() error
 }
 
