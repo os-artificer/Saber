@@ -14,31 +14,13 @@
  * limitations under the License.
 **/
 
-package harvester
+package plugin
 
 import (
 	"context"
 	"fmt"
 	"sync"
-
-	"os-artificer/saber/pkg/gerrors"
 )
-
-const (
-	PluginVersionUnknown = "unknown"
-)
-
-var (
-	ErrPluginUnimplemented = gerrors.New(gerrors.Unimplemented, "plugin is not implemented")
-)
-
-// Plugin is the interface for harvester plugins.
-type Plugin interface {
-	Version() string
-	Name() string
-	Run(ctx context.Context) error
-	Close() error
-}
 
 // PluginFactory creates a Plugin from options (e.g. map from config).
 type PluginFactory func(ctx context.Context, opts any) (Plugin, error)
@@ -86,24 +68,4 @@ func CreatePlugins(ctx context.Context, configs []PluginConfig) ([]Plugin, error
 	}
 
 	return out, nil
-}
-
-// UnimplementedPlugin is the default implementation of the Plugin interface.
-type UnimplementedPlugin struct {
-}
-
-func (p *UnimplementedPlugin) Version() string {
-	return ""
-}
-
-func (p *UnimplementedPlugin) Name() string {
-	return ""
-}
-
-func (p *UnimplementedPlugin) Run(ctx context.Context) error {
-	return ErrPluginUnimplemented
-}
-
-func (p *UnimplementedPlugin) Close() error {
-	return ErrPluginUnimplemented
 }

@@ -136,12 +136,12 @@ func (s *Service) Connect(stream proto.ControllerService_ConnectServer) error {
 func (s *Service) Run() error {
 
 	kasp := keepalive.ServerParameters{
-		Time:    constant.DefaultServerPingTime,
+		Time:    constant.DefaultKeepalivePingInterval,
 		Timeout: constant.DefaultPingTimeout,
 	}
 
 	kacp := keepalive.EnforcementPolicy{
-		MinTime:             constant.DefaultKeepaliveMiniTime,
+		MinTime:             constant.DefaultKeepalivePingInterval,
 		PermitWithoutStream: true,
 	}
 

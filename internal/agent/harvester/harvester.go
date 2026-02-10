@@ -18,29 +18,36 @@ package harvester
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 
+	"os-artificer/saber/internal/agent/reporter"
+	_ "os-artificer/saber/internal/agent/harvester/file"
+	_ "os-artificer/saber/internal/agent/harvester/host"
+
+	"os-artificer/saber/internal/agent/harvester/plugin"
 	"os-artificer/saber/pkg/logger"
 	"os-artificer/saber/pkg/tools"
 )
 
 type Harvester struct {
-	plugins map[string]Plugin
-	mu      sync.RWMutex
-	runWg   sync.WaitGroup // used only by Run()
-	closeWg sync.WaitGroup // used only by Close(); separate to avoid WaitGroup contract violation
+	reporter reporter.Reporter
+	plugins  map[string]plugin.Plugin
+	mu       sync.RWMutex
+	runWg    sync.WaitGroup // used only by Run()
+	closeWg  sync.WaitGroup // used only by Close(); separate to avoid WaitGroup contract violation
 }
 
-// NewHarvester creates a new harvester with the given plugins.
-func NewHarvester(plugins []Plugin) *Harvester {
-	pluginsMap := make(map[string]Plugin)
-	for _, plugin := range plugins {
-		if _, ok := pluginsMap[plugin.Name()]; ok {
+// NewHarvester creates a new harvester with the given reporter and plugins.
+func NewHarvester(rep reporter.Reporter, plugins []plugin.Plugin) *Harvester {
+	pluginsMap := make(map[string]plugin.Plugin)
+	for _, p := range plugins {
+		if _, ok := pluginsMap[p.Name()]; ok {
 			continue
 		}
-		pluginsMap[plugin.Name()] = plugin
+		pluginsMap[p.Name()] = p
 	}
-	return &Harvester{plugins: pluginsMap}
+	return &Harvester{reporter: rep, plugins: pluginsMap}
 }
 
 func (h *Harvester) Run(ctx context.Context) error {
@@ -50,11 +57,35 @@ func (h *Harvester) Run(ctx context.Context) error {
 	for _, plugin := range h.plugins {
 		h.runWg.Add(1)
 		plugin := plugin
+
 		tools.Go(func() {
 			defer h.runWg.Done()
 
-			if err := plugin.Run(ctx); err != nil {
+			logger.Infof("harvester run started: %s", plugin.Name())
+
+			eventC, err := plugin.Run(ctx)
+			if err != nil {
 				logger.Errorf("failed to run plugin: %s, errmsg: %v", plugin.Name(), err)
+				return
+			}
+
+			for {
+				select {
+				case <-ctx.Done():
+					logger.Infof("harvester run exited: %s", plugin.Name())
+					return
+
+				case event := <-eventC:
+					logger.Debugf("harvester received event: %s, event: %v", plugin.Name(), event.Data)
+					content, err := json.Marshal(event)
+					if err != nil {
+						logger.Warnf("harvester marshal event failed: %s, err: %v", plugin.Name(), err)
+						continue
+					}
+					if err := h.reporter.SendMessage(ctx, content); err != nil {
+						logger.Warnf("harvester send message failed: %s, err: %v", plugin.Name(), err)
+					}
+				}
 			}
 		})
 	}

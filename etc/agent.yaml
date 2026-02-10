@@ -15,7 +15,7 @@ reporters:
       endpoints: 127.0.0.1:26689
 
 log:
-  fileName: log/agent.log
+  fileName: ./logs/agent.log
   fileSize: 100
   maxBackupCount: 10
   maxBackupAge: 10

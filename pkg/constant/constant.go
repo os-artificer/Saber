@@ -19,12 +19,11 @@ package constant
 import "time"
 
 const (
-	DefaultClientPingTime             = 5 * time.Second
-	DefaultServerPingTime             = 5 * time.Minute
+	DefaultKeepalivePingInterval      = 5 * time.Minute
 	DefaultPingTimeout                = 10 * time.Second
-	DefaultKeepaliveMiniTime          = 5 * time.Minute
 	DefaultMaxReceiveMessageSize      = 1024 * 1024 * 10
 	DefaultMaxSendMessageSize         = 1024 * 1024 * 10
 	DefaultClientReconnectInterval    = 5 * time.Second
 	DefaultClientMaxReconnectAttempts = 10
+	DefaultTransferPoolSize           = 4
 )
