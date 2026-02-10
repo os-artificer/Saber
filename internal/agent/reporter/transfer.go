@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"os-artificer/saber/internal/agent/config"
@@ -48,58 +49,81 @@ func init() {
 			return nil, fmt.Errorf("transfer reporter config missing or invalid endpoints")
 		}
 
+		poolSize := constant.DefaultTransferPoolSize
+		if v, ok := o.Config["pool_size"]; ok {
+			if n, ok := toInt(v); ok && n > 0 {
+				poolSize = n
+			}
+		}
+		if v, ok := o.Config["connection_count"]; ok && poolSize == constant.DefaultTransferPoolSize {
+			if n, ok := toInt(v); ok && n > 0 {
+				poolSize = n
+			}
+		}
+
 		clientID, err := tools.MachineID("saber-agent")
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate machine-id: %v", err)
 		}
 
-		return NewTransferReporter(ctx, endpoints, clientID)
+		return NewTransferReporter(ctx, endpoints, clientID, poolSize)
 	})
 }
 
-// TransferReporter is the reporter for transfer.
-type TransferReporter struct {
-	conn                 *grpc.ClientConn
-	client               proto.TransferServiceClient
-	stream               proto.TransferService_PushDataClient
-	ctx                  context.Context
-	cancel               context.CancelFunc
-	clientId             string
-	mu                   sync.RWMutex
-	closed               bool
-	reconnecting         bool
-	reconnectInterval    time.Duration
-	maxReconnectAttempts int
+func toInt(v any) (int, bool) {
+	switch x := v.(type) {
+	case int:
+		return x, true
+	case int64:
+		return int(x), true
+	case float64:
+		return int(x), true
+	default:
+		return 0, false
+	}
+}
+
+// poolEntry holds one gRPC connection and its PushData stream for the pool.
+type poolEntry struct {
+	mu                  sync.RWMutex
+	conn                *grpc.ClientConn
+	client              proto.TransferServiceClient
+	stream              proto.TransferService_PushDataClient
+	reconnecting        bool
 	reconnectAttempts    int
 }
 
-// NewTransferReporter creates a new transfer reporter.
-func NewTransferReporter(ctx context.Context, serverAddr string, clientId string) (*TransferReporter, error) {
-	kacp := keepalive.ClientParameters{
-		Time:                constant.DefaultClientPingTime,
-		Timeout:             constant.DefaultPingTimeout,
-		PermitWithoutStream: true,
-	}
+// TransferReporter is the reporter for transfer using a pool of gRPC connections.
+type TransferReporter struct {
+	serverAddr           string
+	poolSize             int
+	pool                 []*poolEntry
+	nextIndex            atomic.Uint32
+	ctx                  context.Context
+	cancel               context.CancelFunc
+	clientId             string
+	closed               bool
+	mu                   sync.RWMutex
+	reconnectInterval    time.Duration
+	maxReconnectAttempts int
+}
 
-	conn, err := grpc.NewClient(
-		serverAddr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithKeepaliveParams(kacp),
-		grpc.WithDefaultCallOptions(
-			grpc.MaxCallRecvMsgSize(constant.DefaultMaxReceiveMessageSize),
-			grpc.MaxCallSendMsgSize(constant.DefaultMaxSendMessageSize),
-		),
-	)
-
-	if err != nil {
-		return nil, err
+// NewTransferReporter creates a new transfer reporter with a connection pool.
+func NewTransferReporter(ctx context.Context, serverAddr string, clientId string, poolSize int) (*TransferReporter, error) {
+	if poolSize <= 0 {
+		poolSize = constant.DefaultTransferPoolSize
 	}
 
 	ctxCancel, cancel := context.WithCancel(ctx)
+	pool := make([]*poolEntry, poolSize)
+	for i := range pool {
+		pool[i] = &poolEntry{}
+	}
 
 	return &TransferReporter{
-		conn:                 conn,
-		client:               proto.NewTransferServiceClient(conn),
+		serverAddr:           serverAddr,
+		poolSize:             poolSize,
+		pool:                 pool,
 		ctx:                  ctxCancel,
 		cancel:               cancel,
 		clientId:             clientId,
@@ -108,88 +132,119 @@ func NewTransferReporter(ctx context.Context, serverAddr string, clientId string
 	}, nil
 }
 
-func (c *TransferReporter) connect() error {
-	c.mu.Lock()
+func (c *TransferReporter) newConn() (*grpc.ClientConn, error) {
+	kacp := keepalive.ClientParameters{
+		Time:                constant.DefaultKeepalivePingInterval,
+		Timeout:             constant.DefaultPingTimeout,
+		PermitWithoutStream: true,
+	}
+
+	return grpc.NewClient(
+		c.serverAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithKeepaliveParams(kacp),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(constant.DefaultMaxReceiveMessageSize),
+			grpc.MaxCallSendMsgSize(constant.DefaultMaxSendMessageSize),
+		),
+	)
+}
+
+// connectSlot establishes connection and stream for one pool slot.
+func (c *TransferReporter) connectSlot(i int) error {
+	c.mu.RLock()
 	if c.closed {
-		c.mu.Unlock()
+		c.mu.RUnlock()
 		return fmt.Errorf("client is closed")
 	}
-	c.mu.Unlock()
+	c.mu.RUnlock()
 
-	stream, err := c.client.PushData(c.ctx)
+	conn, err := c.newConn()
 	if err != nil {
 		return err
 	}
 
-	c.mu.Lock()
-	c.stream = stream
-	c.reconnectAttempts = 0
-	c.mu.Unlock()
+	client := proto.NewTransferServiceClient(conn)
+	stream, err := client.PushData(c.ctx)
+	if err != nil {
+		_ = conn.Close()
+		return err
+	}
 
-	go c.sendConnectionEstablished()
+	entry := c.pool[i]
+	entry.mu.Lock()
+	entry.conn = conn
+	entry.client = client
+	entry.stream = stream
+	entry.reconnectAttempts = 0
+	entry.mu.Unlock()
 
-	go c.monitorConnection()
+	go c.sendConnectionEstablished(i)
+	go c.monitorConnection(i)
 
 	return nil
 }
 
-func (c *TransferReporter) handleDisconnect() {
-	c.mu.Lock()
-	if c.closed || c.reconnecting {
-		c.mu.Unlock()
+func (c *TransferReporter) handleDisconnect(i int) {
+	entry := c.pool[i]
+	entry.mu.Lock()
+	if c.closed {
+		entry.mu.Unlock()
 		return
 	}
-
-	c.reconnecting = true
-	c.stream = nil // so SendMessage returns "stream not initialized" until reconnect succeeds
-	c.mu.Unlock()
+	if entry.reconnecting {
+		entry.mu.Unlock()
+		return
+	}
+	entry.reconnecting = true
+	oldConn := entry.conn
+	entry.conn = nil
+	entry.client = nil
+	entry.stream = nil
+	entry.reconnectAttempts++
+	attempts := entry.reconnectAttempts
+	maxAttempts := c.maxReconnectAttempts
+	entry.mu.Unlock()
 
 	defer func() {
-		c.mu.Lock()
-		c.reconnecting = false
-		c.mu.Unlock()
+		entry.mu.Lock()
+		entry.reconnecting = false
+		entry.mu.Unlock()
 	}()
 
-	c.mu.Lock()
-	c.reconnectAttempts++
-	reconnectAttempts := c.reconnectAttempts
-	maxAttempts := c.maxReconnectAttempts
-	c.mu.Unlock()
+	if oldConn != nil {
+		_ = oldConn.Close()
+	}
 
-	if maxAttempts > 0 && reconnectAttempts > maxAttempts {
-		logger.Warnf("Max reconnect attempts (%d) reached, giving up", maxAttempts)
+	if maxAttempts > 0 && attempts > maxAttempts {
+		logger.Warnf("transfer pool slot %d: max reconnect attempts (%d) reached", i, maxAttempts)
 		return
 	}
 
-	// The exponential backoff algorithm calculates the reconnection interval.
-	backoffInterval := c.reconnectInterval * time.Duration(1<<uint(reconnectAttempts-1))
+	backoffInterval := c.reconnectInterval * time.Duration(1<<uint(attempts-1))
+	backoffInterval += time.Duration(rand.Int63n(int64(backoffInterval / 2)))
 
-	// Add some randomness to avoid the stampede effect.
-	backoffInterval = backoffInterval + time.Duration(rand.Int63n(int64(backoffInterval/2)))
-
-	logger.Infof("Reconnect attempt %d in %v", reconnectAttempts, backoffInterval)
+	logger.Infof("transfer pool slot %d: reconnect attempt %d in %v", i, attempts, backoffInterval)
 	time.Sleep(backoffInterval)
 
-	// Do not attempt connect if client was closed during backoff
-	c.mu.Lock()
+	c.mu.RLock()
 	closed := c.closed
-	c.mu.Unlock()
+	c.mu.RUnlock()
 	if closed {
 		return
 	}
 
-	// retry
-	logger.Infof("Attempting to reconnect...")
-	err := c.connect()
+	logger.Infof("transfer pool slot %d: attempting reconnect", i)
+	err := c.connectSlot(i)
 	if err != nil {
-		logger.Warnf("Reconnect failed: %v", err)
-		go c.handleDisconnect()
+		logger.Warnf("transfer pool slot %d: reconnect failed: %v", i, err)
+		go c.handleDisconnect(i)
 	} else {
-		logger.Infof("Reconnect successful")
+		logger.Infof("transfer pool slot %d: reconnect successful", i)
 	}
 }
 
-func (c *TransferReporter) monitorConnection() {
+func (c *TransferReporter) monitorConnection(i int) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
@@ -202,10 +257,18 @@ func (c *TransferReporter) monitorConnection() {
 				return
 			}
 			c.mu.RUnlock()
-			state := c.GetConnectionState()
+
+			entry := c.pool[i]
+			entry.mu.RLock()
+			conn := entry.conn
+			entry.mu.RUnlock()
+			if conn == nil {
+				return
+			}
+			state := conn.GetState()
 			if state == connectivity.TransientFailure || state == connectivity.Shutdown {
-				logger.Warnf("Connection state: %s, starting reconnect", state.String())
-				go c.handleDisconnect()
+				logger.Warnf("transfer pool slot %d: connection state %s, starting reconnect", i, state.String())
+				go c.handleDisconnect(i)
 				return
 			}
 
@@ -215,47 +278,60 @@ func (c *TransferReporter) monitorConnection() {
 	}
 }
 
-func (c *TransferReporter) sendConnectionEstablished() {
+func (c *TransferReporter) sendConnectionEstablished(i int) {
 	msg := &proto.TransferRequest{}
 
-	c.mu.RLock()
-	stream := c.stream
-	c.mu.RUnlock()
+	entry := c.pool[i]
+	entry.mu.RLock()
+	stream := entry.stream
+	entry.mu.RUnlock()
 
 	if stream == nil {
 		return
 	}
 
 	if err := stream.Send(msg); err != nil {
-		logger.Errorf("Error sending connection established message: %v", err)
+		logger.Errorf("transfer pool slot %d: error sending connection established: %v", i, err)
 	}
 }
 
 func (c *TransferReporter) Run() error {
-	err := c.connect()
-	if err != nil {
-		logger.Errorf("failed to connect remote server. errmsg:%v", err)
-		return err
+	for i := 0; i < c.poolSize; i++ {
+		i := i
+		tools.Go(func() {
+			for {
+				err := c.connectSlot(i)
+				if err == nil {
+					return
+				}
+				c.mu.RLock()
+				closed := c.closed
+				c.mu.RUnlock()
+				if closed {
+					return
+				}
+				logger.Warnf("transfer pool slot %d: initial connect failed: %v, retrying", i, err)
+				time.Sleep(c.reconnectInterval)
+			}
+		})
 	}
 
 	<-c.ctx.Done()
-
 	return c.ctx.Err()
 }
 
 func (c *TransferReporter) SendMessage(ctx context.Context, content []byte) error {
 	c.mu.RLock()
 	closed := c.closed
-	stream := c.stream
 	clientId := c.clientId
+	poolSize := c.poolSize
 	c.mu.RUnlock()
 
 	if closed {
 		return fmt.Errorf("client is closed")
 	}
-
-	if stream == nil {
-		return fmt.Errorf("stream not initialized")
+	if poolSize == 0 {
+		return fmt.Errorf("no pool slots")
 	}
 
 	msg := &proto.TransferRequest{
@@ -263,18 +339,27 @@ func (c *TransferReporter) SendMessage(ctx context.Context, content []byte) erro
 		Payload:  content,
 	}
 
-	err := stream.Send(msg)
-	if err != nil {
-		// Trigger reconnect on send failure so we recover without waiting for monitor tick
-		c.mu.Lock()
-		if !c.closed && !c.reconnecting {
-			c.stream = nil
-			go c.handleDisconnect()
+	for try := 0; try < poolSize; try++ {
+		idx := int(c.nextIndex.Add(1)%uint32(poolSize))
+		entry := c.pool[idx]
+
+		entry.mu.RLock()
+		stream := entry.stream
+		entry.mu.RUnlock()
+
+		if stream == nil {
+			continue
 		}
-		c.mu.Unlock()
-		return err
+
+		err := stream.Send(msg)
+		if err != nil {
+			go c.handleDisconnect(idx)
+			continue
+		}
+		return nil
 	}
-	return nil
+
+	return fmt.Errorf("no healthy stream: all %d slots unavailable or send failed", poolSize)
 }
 
 func (c *TransferReporter) Close() error {
@@ -284,27 +369,44 @@ func (c *TransferReporter) Close() error {
 	if c.closed {
 		return nil
 	}
-
 	c.closed = true
 
 	if c.cancel != nil {
 		c.cancel()
 	}
 
-	if c.conn != nil {
-		return c.conn.Close()
+	var firstErr error
+	for _, entry := range c.pool {
+		entry.mu.Lock()
+		conn := entry.conn
+		entry.conn = nil
+		entry.client = nil
+		entry.stream = nil
+		entry.mu.Unlock()
+		if conn != nil {
+			if err := conn.Close(); err != nil && firstErr == nil {
+				firstErr = err
+			}
+		}
 	}
-	return nil
+	return firstErr
 }
 
-// GetConnectionState Get the state of the connection.
+// GetConnectionState returns the state of the first non-nil connection in the pool.
 func (c *TransferReporter) GetConnectionState() connectivity.State {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	if c.conn == nil {
+	if c.closed {
 		return connectivity.Shutdown
 	}
-
-	return c.conn.GetState()
+	for _, entry := range c.pool {
+		entry.mu.RLock()
+		conn := entry.conn
+		entry.mu.RUnlock()
+		if conn != nil {
+			return conn.GetState()
+		}
+	}
+	return connectivity.Idle
 }

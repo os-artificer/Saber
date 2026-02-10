@@ -42,7 +42,7 @@ func Run(cmd *cobra.Command, args []string) error {
 	handler := source.NewConnectionHandler(out)
 	defer handler.Close()
 
-	agentSource := source.NewAgentSource(address)
+	agentSource := source.NewAgentSource(address, nil)
 	return agentSource.Run(ctx, handler)
 }
 

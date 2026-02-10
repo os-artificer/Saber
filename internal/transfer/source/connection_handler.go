@@ -64,6 +64,8 @@ func (c *ConnectionHandler) readEvent() {
 			return
 
 		case msg := <-c.eventC:
+			logger.Debugf("connection handler received event: %v", msg)
+
 			if msg != nil && c.sink != nil {
 				if err := c.sink.Write(context.Background(), msg); err != nil {
 					logger.Warnf("sink write failed: %v", err)

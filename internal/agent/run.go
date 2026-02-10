@@ -47,7 +47,7 @@ func initLogger(cfg *config.LogConfig) error {
 
 	logCfg := logger.Config{
 		Filename:   cfg.FileName,
-		LogLevel:   logger.InfoLevel,
+		LogLevel:   cfg.LogLevel,
 		MaxSizeMB:  cfg.FileSize,
 		MaxBackups: cfg.MaxBackupCount,
 		MaxAge:     cfg.MaxBackupAge,

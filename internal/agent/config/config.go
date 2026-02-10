@@ -18,6 +18,8 @@ package config
 
 import (
 	"time"
+
+	"os-artificer/saber/pkg/logger"
 )
 
 var Cfg = Configuration{
@@ -26,10 +28,31 @@ var Cfg = Configuration{
 	Discovery:  DiscoveryConfig{},
 	Controller: ControllerConfig{},
 	Reporters: []ReporterEntry{
-		{Type: "transfer", Config: map[string]any{"endpoints": "127.0.0.1:26689"}},
+		{Type: "transfer",
+			Config: map[string]any{
+				"endpoints": "127.0.0.1:26689",
+			},
+		},
 	},
-	Harvester: HarvesterConfig{},
-	Log:       LogConfig{},
+	Harvester: HarvesterConfig{
+		Plugins: []HarvesterPluginEntry{
+			{
+				Name: "host",
+				Options: map[string]any{
+					"interval": 1 * time.Second,
+					"timeout":  10 * time.Second,
+				},
+			},
+		},
+	},
+
+	Log: LogConfig{
+		FileName:       "./logs/agent.log",
+		LogLevel:       logger.DebugLevel,
+		FileSize:       100,
+		MaxBackupCount: 10,
+		MaxBackupAge:   10,
+	},
 }
 
 // DiscoveryConfig discovery configuration
@@ -70,10 +93,11 @@ type HarvesterConfig struct {
 
 // LogConfig log config
 type LogConfig struct {
-	FileName       string `yaml:"fileName"`
-	FileSize       int    `yaml:"fileSize"`
-	MaxBackupCount int    `yaml:"maxBackupCount"`
-	MaxBackupAge   int    `yaml:"maxBackupAge"`
+	FileName       string       `yaml:"fileName"`
+	LogLevel       logger.Level `yaml:"logLevel"`
+	FileSize       int          `yaml:"fileSize"`
+	MaxBackupCount int          `yaml:"maxBackupCount"`
+	MaxBackupAge   int          `yaml:"maxBackupAge"`
 }
 
 // Configuration agent's configuration

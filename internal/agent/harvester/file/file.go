@@ -18,6 +18,8 @@ package file
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	"os-artificer/saber/internal/agent/harvester/plugin"
 	"os-artificer/saber/pkg/logger"
@@ -31,11 +33,15 @@ func init() {
 
 // FilePlugin collects data from files.
 type FilePlugin struct {
+	plugin.UnimplementedPlugin
+
+	wg   sync.WaitGroup
+	done chan struct{}
 	opts any
 }
 
 func newFilePlugin(ctx context.Context, opts any) (plugin.Plugin, error) {
-	return &FilePlugin{opts: opts}, nil
+	return &FilePlugin{opts: opts, done: make(chan struct{})}, nil
 }
 
 func (p *FilePlugin) Version() string {
@@ -49,16 +55,22 @@ func (p *FilePlugin) Name() string {
 func (p *FilePlugin) Run(ctx context.Context) (plugin.EventC, error) {
 	eventC := make(plugin.EventC)
 
+	p.wg.Add(1)
 	go func() {
+		defer p.wg.Done()
 		defer close(eventC)
 
 		for {
 			select {
+			case <-p.done:
+				logger.Infof("file plugin run exited: %s", p.Name())
+				return
+
 			case <-ctx.Done():
 				logger.Infof("file plugin run exited: %s", p.Name())
 				return
 
-			default:
+			case <-time.After(1 * time.Second):
 				eventC <- &plugin.Event{
 					PluginName: p.Name(),
 					EventName:  "file",
@@ -72,5 +84,11 @@ func (p *FilePlugin) Run(ctx context.Context) (plugin.EventC, error) {
 }
 
 func (p *FilePlugin) Close() error {
+	if p.done != nil {
+		close(p.done)
+		p.done = nil
+	}
+
+	p.wg.Wait()
 	return nil
 }

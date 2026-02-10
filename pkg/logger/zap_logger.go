@@ -112,7 +112,8 @@ func NewZapLogger(config Config) Logger {
 
 	encoder := zapcore.NewConsoleEncoder(cfg.EncoderConfig)
 	core := zapcore.NewCore(encoder, zapcore.AddSync(logRotator), convertLevel(config.LogLevel))
-	logger := zap.New(core, zap.AddCaller())
+	// AddCaller records caller file:line; AddCallerSkip(2) skips this package's wrapper so caller is the file:line of Debugf/Infof/etc.
+	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(2))
 
 	return &ZapLogger{logger: logger, sugaredLogger: logger.Sugar()}
 }

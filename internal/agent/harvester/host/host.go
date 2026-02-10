@@ -18,6 +18,8 @@ package host
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	"os-artificer/saber/internal/agent/harvester/plugin"
 	"os-artificer/saber/pkg/logger"
@@ -31,11 +33,20 @@ func init() {
 
 // HostPlugin collects host metrics/info.
 type HostPlugin struct {
-	opts any
+	plugin.UnimplementedPlugin
+
+	stats *Stats
+	wg    sync.WaitGroup
+	done  chan struct{}
+	opts  any
 }
 
 func newHostPlugin(ctx context.Context, opts any) (plugin.Plugin, error) {
-	return &HostPlugin{opts: opts}, nil
+	return &HostPlugin{
+		stats: NewStats(),
+		opts:  opts,
+		done:  make(chan struct{}),
+	}, nil
 }
 
 func (p *HostPlugin) Version() string {
@@ -49,21 +60,33 @@ func (p *HostPlugin) Name() string {
 func (p *HostPlugin) Run(ctx context.Context) (plugin.EventC, error) {
 	eventC := make(plugin.EventC)
 
+	p.wg.Add(1)
 	go func() {
+		defer p.wg.Done()
 		defer close(eventC)
 
 		for {
 			select {
+			case <-p.done:
+				logger.Infof("host plugin run exited: %s", p.Name())
+				return
+
 			case <-ctx.Done():
 				logger.Infof("host plugin run exited: %s", p.Name())
 				return
 
-			default:
+			case <-time.After(1 * time.Second):
+				if err := p.stats.CollectStats(); err != nil {
+					logger.Errorf("failed to collect host stats: %v", err)
+					continue
+				}
+
 				eventC <- &plugin.Event{
 					PluginName: p.Name(),
 					EventName:  "host",
-					Data:       nil,
+					Data:       p.stats,
 				}
+
 			}
 		}
 	}()
@@ -72,5 +95,11 @@ func (p *HostPlugin) Run(ctx context.Context) (plugin.EventC, error) {
 }
 
 func (p *HostPlugin) Close() error {
+	if p.done != nil {
+		close(p.done)
+		p.done = nil
+	}
+
+	p.wg.Wait()
 	return nil
 }

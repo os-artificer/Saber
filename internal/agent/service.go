@@ -49,6 +49,7 @@ func (s *Service) Run() error {
 	runWg.Add(1)
 	tools.Go(func() {
 		defer runWg.Done()
+
 		if err := s.reporter.Run(); err != nil {
 			logger.Warnf("reporter exited: %v", err)
 		}
@@ -57,6 +58,7 @@ func (s *Service) Run() error {
 	runWg.Add(1)
 	tools.Go(func() {
 		defer runWg.Done()
+
 		if err := s.harvester.Run(s.ctx); err != nil && s.ctx.Err() == nil {
 			logger.Warnf("harvester exited: %v", err)
 		}
@@ -78,7 +80,25 @@ func (s *Service) Run() error {
 
 // Close cancels the service context so Run returns.
 func (s *Service) Close() error {
-	s.cancel()
+	if s.harvester != nil {
+		if err := s.harvester.Close(); err != nil {
+			logger.Warnf("harvester close: %v", err)
+		}
+		s.harvester = nil
+	}
+
+	if s.reporter != nil {
+		if err := s.reporter.Close(); err != nil {
+			logger.Warnf("reporter close: %v", err)
+		}
+		s.reporter = nil
+	}
+
+	if s.cancel != nil {
+		s.cancel()
+		s.cancel = nil
+	}
+
 	return nil
 }
 
@@ -111,6 +131,6 @@ func CreateService(ctx context.Context, cfg *config.Configuration) (*Service, er
 		return nil, err
 	}
 
-	h := harvester.NewHarvester(plugins)
+	h := harvester.NewHarvester(rep, plugins)
 	return NewService(ctx, rep, h), nil
 }

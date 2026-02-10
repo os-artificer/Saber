@@ -18,8 +18,6 @@ package plugin
 
 import (
 	"context"
-	"fmt"
-	"sync"
 
 	"os-artificer/saber/pkg/gerrors"
 )
@@ -48,54 +46,6 @@ type Plugin interface {
 	Name() string
 	Run(ctx context.Context) (EventC, error)
 	Close() error
-}
-
-// PluginFactory creates a Plugin from options (e.g. map from config).
-type PluginFactory func(ctx context.Context, opts any) (Plugin, error)
-
-var (
-	pluginRegistry   = make(map[string]PluginFactory)
-	pluginRegistryMu sync.RWMutex
-)
-
-// PluginConfig is the config for creating one plugin instance.
-type PluginConfig struct {
-	Name    string
-	Options any
-}
-
-// RegisterPlugin registers a harvester plugin by name.
-func RegisterPlugin(name string, factory PluginFactory) {
-	pluginRegistryMu.Lock()
-	defer pluginRegistryMu.Unlock()
-	pluginRegistry[name] = factory
-}
-
-// CreatePlugins creates plugins from config entries.
-func CreatePlugins(ctx context.Context, configs []PluginConfig) ([]Plugin, error) {
-	if len(configs) == 0 {
-		return nil, nil
-	}
-
-	out := make([]Plugin, 0, len(configs))
-	for _, c := range configs {
-		pluginRegistryMu.RLock()
-		factory, ok := pluginRegistry[c.Name]
-		pluginRegistryMu.RUnlock()
-
-		if !ok {
-			return nil, fmt.Errorf("unknown harvester plugin: %s", c.Name)
-		}
-
-		p, err := factory(ctx, c.Options)
-		if err != nil {
-			return nil, err
-		}
-
-		out = append(out, p)
-	}
-
-	return out, nil
 }
 
 // UnimplementedPlugin is the default implementation of the Plugin interface.
