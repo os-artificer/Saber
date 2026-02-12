@@ -26,6 +26,7 @@ import (
 	"os-artificer/saber/pkg/logger"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func setupGracefulShutdown(svr *Service) {
@@ -37,6 +38,26 @@ func setupGracefulShutdown(svr *Service) {
 		svr.Close()
 		os.Exit(0)
 	}()
+}
+
+// loadAgentConfig reads config from ConfigFilePath and returns the listen address.
+func loadAgentConfig() {
+
+	if ConfigFilePath == "" {
+		return
+	}
+
+	viper.SetConfigFile(ConfigFilePath)
+	viper.SetConfigType("yaml")
+
+	if err := viper.ReadInConfig(); err != nil {
+		return
+	}
+
+	if err := viper.Unmarshal(&config.Cfg); err != nil {
+		return
+	}
+
 }
 
 // initLogger initializes the global logger from agent config (pkg/logger).
@@ -60,11 +81,16 @@ func initLogger(cfg *config.LogConfig) error {
 
 func Run(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
+
+	loadAgentConfig()
+
 	cfg := config.Cfg
 
 	if err := initLogger(&cfg.Log); err != nil {
 		logger.Fatalf("Failed to init logger: %v", err)
 	}
+
+	logger.Infof("agent config: %+v", cfg)
 
 	svr, err := CreateService(ctx, &cfg)
 	if err != nil {
@@ -72,5 +98,6 @@ func Run(cmd *cobra.Command, args []string) error {
 	}
 
 	setupGracefulShutdown(svr)
+
 	return svr.Run()
 }

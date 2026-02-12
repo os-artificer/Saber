@@ -26,12 +26,12 @@ import (
 func main() {
 	rootCmd := &cobra.Command{
 		Use:          "Transfer",
-		Short:        "saber Transfer Server",
+		Short:        "Saber Transfer Server",
 		SilenceUsage: true,
 		RunE:         transfer.Run,
 	}
 
-	rootCmd.PersistentFlags().StringVarP(&transfer.ConfigFilePath, "config", "c", "/var/ylg/saber/etc/server.yaml", "")
+	rootCmd.PersistentFlags().StringVarP(&transfer.ConfigFilePath, "config", "c", "./etc/transfer.yaml", "")
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.AddCommand(transfer.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {

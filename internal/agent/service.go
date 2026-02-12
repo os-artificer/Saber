@@ -153,7 +153,10 @@ func CreateService(ctx context.Context, cfg *config.Configuration) (*Service, er
 
 	pluginConfigs := make([]plugin.PluginConfig, 0, len(cfg.Harvester.Plugins))
 	for _, e := range cfg.Harvester.Plugins {
-		pluginConfigs = append(pluginConfigs, plugin.PluginConfig{Name: e.Name, Options: e.Options})
+		pluginConfigs = append(pluginConfigs, plugin.PluginConfig{
+			Name:    e.Name,
+			Options: e.Options,
+		})
 	}
 
 	plugins, err := plugin.CreatePlugins(ctx, pluginConfigs)

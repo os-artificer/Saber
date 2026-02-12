@@ -53,7 +53,7 @@ func TestIs_ByCode(t *testing.T) {
 
 func TestAs(t *testing.T) {
 	ge := New(Timeout, "timeout")
-	var out *GError
+	var out *Error
 	if !As(ge, &out) {
 		t.Fatal("gerrors.As(ge, &out) should be true")
 	}
@@ -76,7 +76,7 @@ func TestAs(t *testing.T) {
 func TestAs_Chain(t *testing.T) {
 	base := errors.New("base")
 	ge := NewE(ComponentFailure, base)
-	var out *GError
+	var out *Error
 	if !As(ge, &out) {
 		t.Fatal("As(ge, &out) should be true")
 	}

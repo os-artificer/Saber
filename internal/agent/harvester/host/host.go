@@ -26,9 +26,10 @@ import (
 )
 
 const hostPluginVersion = "1.0.0"
+const pluginName = "host"
 
 func init() {
-	plugin.RegisterPlugin("host", newHostPlugin)
+	plugin.RegisterPlugin(pluginName, newHostPlugin)
 }
 
 // HostPlugin collects host metrics/info.
@@ -38,13 +39,20 @@ type HostPlugin struct {
 	stats *Stats
 	wg    sync.WaitGroup
 	done  chan struct{}
-	opts  any
+	opts  Options
 }
 
 func newHostPlugin(ctx context.Context, opts any) (plugin.Plugin, error) {
+	hostOptions, err := OptionsFromAny(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Infof("host plugin options: %+v", hostOptions)
+
 	return &HostPlugin{
 		stats: NewStats(),
-		opts:  opts,
+		opts:  hostOptions,
 		done:  make(chan struct{}),
 	}, nil
 }
@@ -54,7 +62,7 @@ func (p *HostPlugin) Version() string {
 }
 
 func (p *HostPlugin) Name() string {
-	return "host"
+	return pluginName
 }
 
 func (p *HostPlugin) Run(ctx context.Context) (plugin.EventC, error) {
@@ -87,7 +95,6 @@ func (p *HostPlugin) Run(ctx context.Context) (plugin.EventC, error) {
 
 				eventC <- &plugin.Event{
 					PluginName: p.Name(),
-					EventName:  "host",
 					Data:       p.stats,
 				}
 

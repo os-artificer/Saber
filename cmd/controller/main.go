@@ -26,12 +26,12 @@ import (
 func main() {
 	rootCmd := &cobra.Command{
 		Use:          "Controller",
-		Short:        "saber Controller Server",
+		Short:        "Saber Controller Server",
 		SilenceUsage: true,
 		RunE:         controller.Run,
 	}
 
-	rootCmd.PersistentFlags().StringVarP(&controller.ConfigFilePath, "config", "c", "/var/ylg/saber/etc/controller.yaml", "")
+	rootCmd.PersistentFlags().StringVarP(&controller.ConfigFilePath, "config", "c", "./etc/controller.yaml", "")
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.AddCommand(controller.VersionCmd)
 
