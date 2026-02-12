@@ -40,55 +40,55 @@ const (
 	ComponentFailure
 )
 
-// GError global error type
-type GError struct {
+// Error global error type
+type Error struct {
 	code    Code
 	message string
 	cause   error // optional; set by NewE for error chain (Unwrap)
 }
 
-// New create a new GError object
-func New(c Code, msg string) *GError {
-	return &GError{code: c, message: msg}
+// New create a new Error object
+func New(c Code, msg string) *Error {
+	return &Error{code: c, message: msg}
 }
 
-func Newf(c Code, format string, args ...any) *GError {
+func Newf(c Code, format string, args ...any) *Error {
 	msg := fmt.Sprintf(format, args...)
-	return &GError{code: c, message: msg}
+	return &Error{code: c, message: msg}
 }
 
-func NewE(c Code, err error) *GError {
+func NewE(c Code, err error) *Error {
 	if err == nil {
 		return nil
 	}
-	return &GError{code: c, message: err.Error(), cause: err}
+	return &Error{code: c, message: err.Error(), cause: err}
 }
 
 // Code only return error code
-func (g *GError) Code() Code {
+func (g *Error) Code() Code {
 	return g.code
 }
 
 // Message only return message
-func (g *GError) Message() string {
+func (g *Error) Message() string {
 	return g.message
 }
 
 // Error error interface method
-func (g *GError) Error() string {
+func (g *Error) Error() string {
 	return fmt.Sprintf("code:%d, errmsg:%s", g.code, g.message)
 }
 
 // Unwrap returns the underlying error if any, for errors.Is/errors.As compatibility.
-func (g *GError) Unwrap() error {
+func (g *Error) Unwrap() error {
 	return g.cause
 }
 
 // Is reports whether the target is considered a match for this error.
-// When target is *GError, matches by Code equality so that e.g.
-// errors.Is(err, gerrors.New(gerrors.NotFound, "")) matches any GError with NotFound.
-func (g *GError) Is(target error) bool {
-	t, ok := target.(*GError)
+// When target is *Error, matches by Code equality so that e.g.
+// errors.Is(err, gerrors.New(gerrors.NotFound, "")) matches any Error with NotFound.
+func (g *Error) Is(target error) bool {
+	t, ok := target.(*Error)
 	if !ok {
 		return false
 	}

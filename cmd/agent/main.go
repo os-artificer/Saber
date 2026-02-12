@@ -10,12 +10,12 @@ import (
 func main() {
 	rootCmd := &cobra.Command{
 		Use:          "Agent",
-		Short:        "saber Agent",
+		Short:        "Saber Agent",
 		SilenceUsage: true,
 		RunE:         agent.Run,
 	}
 
-	rootCmd.PersistentFlags().StringVarP(&agent.ConfigFilePath, "config", "c", "/var/ylg/saber/etc/agent.yaml", "")
+	rootCmd.PersistentFlags().StringVarP(&agent.ConfigFilePath, "config", "c", "./etc/agent.yaml", "")
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.AddCommand(agent.VersionCmd)
 

@@ -26,7 +26,11 @@ var Cfg = Configuration{
 	Name:    "Agent",
 	Version: "v1.0.0",
 
-	Discovery: DiscoveryConfig{},
+	AccessServers: AccessServerConfig{
+		Type:             "etcd",
+		Endpoints:        "127.0.0.1:2379",
+		SyncMetaInterval: 30 * time.Second,
+	},
 
 	Controller: ControllerConfig{
 		Endpoints:        "127.0.0.1:26688",
@@ -41,6 +45,7 @@ var Cfg = Configuration{
 			},
 		},
 	},
+
 	Harvester: HarvesterConfig{
 		Plugins: []HarvesterPluginEntry{
 			{
@@ -63,7 +68,8 @@ var Cfg = Configuration{
 }
 
 // DiscoveryConfig discovery configuration
-type DiscoveryConfig struct {
+type AccessServerConfig struct {
+	Type             string        `yaml:"type"`
 	Endpoints        string        `yaml:"endpoints"`
 	SyncMetaInterval time.Duration `yaml:"syncMetaInterval"`
 }
@@ -109,11 +115,11 @@ type LogConfig struct {
 
 // Configuration agent's configuration
 type Configuration struct {
-	Name       string           `yaml:"name"`
-	Version    string           `yaml:"version"`
-	Discovery  DiscoveryConfig  `yaml:"discovery"`
-	Controller ControllerConfig `yaml:"controller"`
-	Reporters  []ReporterEntry  `yaml:"reporters"`
-	Harvester  HarvesterConfig  `yaml:"harvester"`
-	Log        LogConfig        `yaml:"log"`
+	Name          string             `yaml:"name"`
+	Version       string             `yaml:"version"`
+	AccessServers AccessServerConfig `yaml:"accessServers"`
+	Controller    ControllerConfig   `yaml:"controller"`
+	Reporters     []ReporterEntry    `yaml:"reporters"`
+	Harvester     HarvesterConfig    `yaml:"harvester"`
+	Log           LogConfig          `yaml:"log"`
 }
