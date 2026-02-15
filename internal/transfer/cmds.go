@@ -22,6 +22,41 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// StartCmd starts the transfer server
+var StartCmd = &cobra.Command{
+	Use:   "start",
+	Short: "Start Transfer Server",
+	RunE:  runStart,
+}
+
+// StopCmd stops the transfer server
+var StopCmd = &cobra.Command{
+	Use:   "stop",
+	Short: "Stop Transfer Server",
+	RunE:  runStop,
+}
+
+// RestartCmd restarts the transfer server
+var RestartCmd = &cobra.Command{
+	Use:   "restart",
+	Short: "Restart Transfer Server",
+	RunE:  runRestart,
+}
+
+// ReloadCmd reloads the transfer server config
+var ReloadCmd = &cobra.Command{
+	Use:   "reload",
+	Short: "Reload Transfer Server",
+	RunE:  runReload,
+}
+
+var HealthCheckCmd = &cobra.Command{
+	Use:   "health",
+	Short: "Health Check Transfer Server",
+	Run: func(cmd *cobra.Command, args []string) {
+	},
+}
+
 var VersionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print Version Information",

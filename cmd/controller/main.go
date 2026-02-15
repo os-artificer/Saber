@@ -17,6 +17,8 @@
 package main
 
 import (
+	"os"
+
 	"os-artificer/saber/internal/controller"
 	"os-artificer/saber/pkg/logger"
 
@@ -24,6 +26,14 @@ import (
 )
 
 func main() {
+	if os.Getenv("SABER_CONTROLLER_SUPERVISOR") == "1" {
+		if err := controller.RunSupervisor(); err != nil {
+			os.Exit(1)
+		}
+		os.Exit(0)
+		return
+	}
+
 	rootCmd := &cobra.Command{
 		Use:          "Controller",
 		Short:        "Saber Controller Server",
@@ -33,6 +43,12 @@ func main() {
 
 	rootCmd.PersistentFlags().StringVarP(&controller.ConfigFilePath, "config", "c", "./etc/controller.yaml", "")
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
+
+	rootCmd.AddCommand(controller.StartCmd)
+	rootCmd.AddCommand(controller.StopCmd)
+	rootCmd.AddCommand(controller.RestartCmd)
+	rootCmd.AddCommand(controller.ReloadCmd)
+	rootCmd.AddCommand(controller.HealthCheckCmd)
 	rootCmd.AddCommand(controller.VersionCmd)
 
 	if err := rootCmd.Execute(); err != nil {

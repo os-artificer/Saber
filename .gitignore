@@ -22,6 +22,8 @@ profile.cov
 
 build
 logs
+log
+pids
 
 # Go workspace file
 go.work

@@ -58,6 +58,7 @@ func loadAgentConfig() {
 		return
 	}
 
+	logger.Infof("reloaded agent config: %+v", config.Cfg)
 }
 
 // initLogger initializes the global logger from agent config (pkg/logger).
@@ -98,6 +99,19 @@ func Run(cmd *cobra.Command, args []string) error {
 	}
 
 	setupGracefulShutdown(svr)
+
+	reloadCh := make(chan os.Signal, 1)
+	signal.Notify(reloadCh, syscall.SIGHUP)
+	go func() {
+		for range reloadCh {
+			loadAgentConfig()
+			if err := initLogger(&config.Cfg.Log); err != nil {
+				logger.Warnf("reload config: init logger failed: %v", err)
+				continue
+			}
+			logger.Infof("config reloaded")
+		}
+	}()
 
 	return svr.Run()
 }

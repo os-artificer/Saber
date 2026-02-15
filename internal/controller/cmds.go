@@ -29,3 +29,38 @@ var VersionCmd = &cobra.Command{
 		version.Print("saber Controller Server")
 	},
 }
+
+// StartCmd starts the controller server
+var StartCmd = &cobra.Command{
+	Use:   "start",
+	Short: "Start Controller Server",
+	RunE:  runStart,
+}
+
+// StopCmd stops the controller server
+var StopCmd = &cobra.Command{
+	Use:   "stop",
+	Short: "Stop Controller Server",
+	RunE:  runStop,
+}
+
+// RestartCmd restarts the controller server
+var RestartCmd = &cobra.Command{
+	Use:   "restart",
+	Short: "Restart Controller Server",
+	RunE:  runRestart,
+}
+
+// ReloadCmd reloads the controller server config
+var ReloadCmd = &cobra.Command{
+	Use:   "reload",
+	Short: "Reload Controller Server",
+	RunE:  runReload,
+}
+
+var HealthCheckCmd = &cobra.Command{
+	Use:   "health",
+	Short: "Health Check Controller Server",
+	Run: func(cmd *cobra.Command, args []string) {
+	},
+}
