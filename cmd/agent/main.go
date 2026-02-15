@@ -36,7 +36,7 @@ func main() {
 	rootCmd.AddCommand(agent.HealthCheckCmd)
 
 	if err := rootCmd.Execute(); err != nil {
-		logger.Errorf("failed to start agent server. errmsg:%s", err.Error())
+		logger.Errorf("agent: %s", err.Error())
 		return
 	}
 }

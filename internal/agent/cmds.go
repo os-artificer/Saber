@@ -53,9 +53,7 @@ var ReloadCmd = &cobra.Command{
 var StopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stop Agent",
-	Run: func(cmd *cobra.Command, args []string) {
-
-	},
+	RunE:  runStop,
 }
 
 // StartCmd starts the agent
