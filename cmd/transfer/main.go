@@ -17,6 +17,8 @@
 package main
 
 import (
+	"os"
+
 	"os-artificer/saber/internal/transfer"
 	"os-artificer/saber/pkg/logger"
 
@@ -24,6 +26,14 @@ import (
 )
 
 func main() {
+	if os.Getenv("SABER_TRANSFER_SUPERVISOR") == "1" {
+		if err := transfer.RunSupervisor(); err != nil {
+			os.Exit(1)
+		}
+		os.Exit(0)
+		return
+	}
+
 	rootCmd := &cobra.Command{
 		Use:          "Transfer",
 		Short:        "Saber Transfer Server",

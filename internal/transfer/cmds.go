@@ -22,45 +22,45 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var VersionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print Version Information",
-	Run: func(cmd *cobra.Command, args []string) {
-		version.Print("saber Controller Server")
-	},
-}
-
-var RestartCmd = &cobra.Command{
-	Use:   "restart",
-	Short: "Restart Transfer Server",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-}
-
-var ReloadCmd = &cobra.Command{
-	Use:   "reload",
-	Short: "Reload Transfer Server",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-}
-
-var StopCmd = &cobra.Command{
-	Use:   "stop",
-	Short: "Stop Transfer Server",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-}
-
+// StartCmd starts the transfer server
 var StartCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start Transfer Server",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
+	RunE:  runStart,
+}
+
+// StopCmd stops the transfer server
+var StopCmd = &cobra.Command{
+	Use:   "stop",
+	Short: "Stop Transfer Server",
+	RunE:  runStop,
+}
+
+// RestartCmd restarts the transfer server
+var RestartCmd = &cobra.Command{
+	Use:   "restart",
+	Short: "Restart Transfer Server",
+	RunE:  runRestart,
+}
+
+// ReloadCmd reloads the transfer server config
+var ReloadCmd = &cobra.Command{
+	Use:   "reload",
+	Short: "Reload Transfer Server",
+	RunE:  runReload,
 }
 
 var HealthCheckCmd = &cobra.Command{
 	Use:   "health",
 	Short: "Health Check Transfer Server",
 	Run: func(cmd *cobra.Command, args []string) {
+	},
+}
+
+var VersionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print Version Information",
+	Run: func(cmd *cobra.Command, args []string) {
+		version.Print("saber Controller Server")
 	},
 }
