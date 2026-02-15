@@ -94,10 +94,17 @@ func RunSupervisor() error {
 	}
 
 	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	go func() {
-		<-sigCh
-		cancel()
+		for sig := range sigCh {
+			switch sig {
+			case syscall.SIGHUP:
+				_ = daemon.SignalChild(sig)
+			case syscall.SIGINT, syscall.SIGTERM:
+				cancel()
+				return
+			}
+		}
 	}()
 
 	<-ctx.Done()
@@ -137,4 +144,27 @@ func runRestart(cmd *cobra.Command, args []string) error {
 	}
 	time.Sleep(1 * time.Second)
 	return runStart(cmd, args)
+}
+
+func runReload(cmd *cobra.Command, args []string) error {
+	pf := pidFilePath()
+	data, err := os.ReadFile(pf)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("agent not running")
+		}
+		return fmt.Errorf("read pid file: %w", err)
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
+	if err != nil {
+		return fmt.Errorf("invalid pid file: %w", err)
+	}
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		return fmt.Errorf("find process: %w", err)
+	}
+	if err := proc.Signal(syscall.SIGHUP); err != nil {
+		return fmt.Errorf("send SIGHUP: %w", err)
+	}
+	return nil
 }

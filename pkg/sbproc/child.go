@@ -18,6 +18,7 @@ package sbproc
 
 import (
 	"io"
+	"os"
 	"os/exec"
 	"syscall"
 )
@@ -39,6 +40,14 @@ func (c *Child) PID() int {
 		return 0
 	}
 	return c.cmd.Process.Pid
+}
+
+// Signal sends the given signal to the child process.
+func (c *Child) Signal(sig os.Signal) error {
+	if c == nil || c.cmd == nil || c.cmd.Process == nil {
+		return os.ErrProcessDone
+	}
+	return c.cmd.Process.Signal(sig)
 }
 
 // Wait waits for the child process to exit and returns its exit code (0 on success)

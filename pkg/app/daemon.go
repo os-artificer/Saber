@@ -18,6 +18,9 @@ package app
 
 import (
 	"context"
+	"errors"
+	"os"
+	"sync"
 	"time"
 
 	"os-artificer/saber/pkg/sbproc"
@@ -27,11 +30,13 @@ import (
 // automatically if it exits unexpectedly. Cancel the context passed to NewDaemon
 // (or call Stop()) to stop the daemon and the child process.
 type Daemon struct {
-	env    map[string]string
-	cmd    string
-	args   []string
-	ctx    context.Context
-	cancel context.CancelFunc
+	env         map[string]string
+	cmd         string
+	args        []string
+	ctx         context.Context
+	cancel      context.CancelFunc
+	mu          sync.Mutex
+	currentChild *sbproc.Child
 }
 
 // NewDaemon returns a Daemon that will run the given command with args and optional env.
@@ -50,9 +55,22 @@ func (d *Daemon) Start() error {
 	if err != nil {
 		return err
 	}
-
+	d.mu.Lock()
+	d.currentChild = child
+	d.mu.Unlock()
 	go d.monitor(child)
 	return nil
+}
+
+// SignalChild sends the given signal to the current child process, if any.
+func (d *Daemon) SignalChild(sig os.Signal) error {
+	d.mu.Lock()
+	child := d.currentChild
+	d.mu.Unlock()
+	if child == nil {
+		return errors.New("no child")
+	}
+	return child.Signal(sig)
 }
 
 func (d *Daemon) startChild() (*sbproc.Child, error) {
@@ -62,6 +80,9 @@ func (d *Daemon) startChild() (*sbproc.Child, error) {
 func (d *Daemon) monitor(child *sbproc.Child) {
 	for {
 		_, _ = child.Wait()
+		d.mu.Lock()
+		d.currentChild = nil
+		d.mu.Unlock()
 		if d.ctx.Err() != nil {
 			return
 		}
@@ -80,6 +101,9 @@ func (d *Daemon) monitor(child *sbproc.Child) {
 			time.Sleep(time.Second)
 			continue
 		}
+		d.mu.Lock()
+		d.currentChild = child
+		d.mu.Unlock()
 	}
 }
 
