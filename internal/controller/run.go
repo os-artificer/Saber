@@ -22,6 +22,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"os-artificer/saber/internal/controller/apm"
 	"os-artificer/saber/internal/controller/config"
 	"os-artificer/saber/pkg/logger"
 
@@ -60,6 +61,15 @@ func initLogger(cfg *config.LogConfig) error {
 	return nil
 }
 
+// initAPM creates the APM service from config. Business metrics are defined in
+// internal/controller/apm/metrics.go and registered to the default registry.
+func initAPM(cfg *config.APMConfig) (*apm.APM, error) {
+	if cfg == nil {
+		return nil, nil
+	}
+	return apm.NewAPM(cfg.Enabled, cfg.Endpoint), nil
+}
+
 // reloadConfig re-reads config from ConfigFilePath and re-inits logger (for SIGHUP).
 func reloadConfig() {
 	if ConfigFilePath == "" {
@@ -90,12 +100,19 @@ func Run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	svr := CreateService(ctx, config.Cfg.Service.ListenAddress, "")
+	apmSvc, err := initAPM(&config.Cfg.APM)
+	if err != nil {
+		logger.Errorf("Failed to init APM: %v", err)
+		return err
+	}
+
+	svr := CreateService(ctx, config.Cfg.Service.ListenAddress, "", apmSvc)
 
 	setupGracefulShutdown(svr)
 
 	reloadCh := make(chan os.Signal, 1)
 	signal.Notify(reloadCh, syscall.SIGHUP)
+
 	go func() {
 		for range reloadCh {
 			reloadConfig()

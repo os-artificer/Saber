@@ -22,6 +22,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"os-artificer/saber/internal/transfer/apm"
 	"os-artificer/saber/internal/transfer/config"
 	"os-artificer/saber/pkg/logger"
 
@@ -60,6 +61,15 @@ func initLogger(cfg *config.LogConfig) error {
 	return nil
 }
 
+// initAPM creates the APM service from config. Business metrics are defined in
+// internal/transfer/apm/metrics.go and registered to the default registry.
+func initAPM(cfg *config.APMConfig) (*apm.APM, error) {
+	if cfg == nil {
+		return nil, nil
+	}
+	return apm.NewAPM(cfg.Enabled, cfg.Endpoint), nil
+}
+
 // reloadConfig re-reads config from ConfigFilePath and re-inits logger (for SIGHUP).
 func reloadConfig() {
 	if ConfigFilePath == "" {
@@ -90,7 +100,13 @@ func Run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	svr, err := CreateService(ctx, "")
+	apmSvc, err := initAPM(&config.Cfg.APM)
+	if err != nil {
+		logger.Errorf("Failed to init APM: %v", err)
+		return err
+	}
+
+	svr, err := CreateService(ctx, "", apmSvc)
 	if err != nil {
 		logger.Errorf("Failed to create transfer service: %v", err)
 		return err
