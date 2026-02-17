@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"os-artificer/saber/pkg/logger"
+	"os-artificer/saber/pkg/sbnet"
 )
 
 // Cfg global config (loaded by run)
@@ -35,6 +36,15 @@ var Cfg = Configuration{
 		AutoSyncInterval:     10 * time.Second,
 		DialKeepAliveTime:    5 * time.Second,
 		DialKeepAliveTimeout: 5 * time.Second,
+	},
+
+	APM: APMConfig{
+		Enabled: true,
+		Endpoint: sbnet.Endpoint{
+			Protocol: "tcp",
+			Host:     "127.0.0.1",
+			Port:     8201,
+		},
 	},
 
 	Source: []SourceConfig{
@@ -78,6 +88,12 @@ type DiscoveryConfig struct {
 	RegistryTTL           int64         `yaml:"registryTTL"` // in seconds
 }
 
+// APMConfig APM config
+type APMConfig struct {
+	Enabled  bool           `yaml:"enabled"`
+	Endpoint sbnet.Endpoint `yaml:"endpoint"`
+}
+
 // LogConfig log config
 type LogConfig struct {
 	FileName       string       `yaml:"fileName"`
@@ -104,6 +120,7 @@ type Configuration struct {
 	Name      string          `yaml:"name"`
 	Version   string          `yaml:"version"`
 	Discovery DiscoveryConfig `yaml:"discovery"`
+	APM       APMConfig       `yaml:"apm"`
 	Source    []SourceConfig  `yaml:"source"`
 	Sink      []SinkConfig    `yaml:"sink"`
 	Log       LogConfig       `yaml:"log"`

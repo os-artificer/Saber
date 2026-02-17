@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 
+	"os-artificer/saber/internal/controller/apm"
 	"os-artificer/saber/internal/controller/config"
 	"os-artificer/saber/internal/controller/server"
 	"os-artificer/saber/pkg/logger"
@@ -39,23 +40,33 @@ var controllerUnmarshalOpt = viper.DecodeHook(mapstructure.ComposeDecodeHookFunc
 // Service is the controller service.
 type Service struct {
 	svr *server.AgentServer
+	apm *apm.APM
 }
 
-// CreateService creates a new controller service.
-func CreateService(ctx context.Context, address sbnet.Endpoint, serviceID string) *Service {
+// CreateService creates a new controller service. apmSvc may be nil if APM is disabled.
+func CreateService(ctx context.Context, address sbnet.Endpoint, serviceID string, apmSvc *apm.APM) *Service {
 	svr := server.New(ctx, address, serviceID)
 	return &Service{
 		svr: svr,
+		apm: apmSvc,
 	}
 }
 
-// Run starts the controller service.
+// Run starts the controller service. If APM is enabled, it is started in a goroutine before the gRPC server runs.
 func (s *Service) Run() error {
+	if s.apm != nil && s.apm.IsEnabled() {
+		go func() {
+			_ = s.apm.Run()
+		}()
+	}
 	return s.svr.Run()
 }
 
-// Close stops the controller service.
+// Close stops the controller service (APM first, then the gRPC server).
 func (s *Service) Close() error {
+	if s.apm != nil {
+		_ = s.apm.Close()
+	}
 	return s.svr.Close()
 }
 

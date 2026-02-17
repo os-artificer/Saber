@@ -12,6 +12,10 @@ discovery:
   registryRootKeyPrefix: os-artificer/saber
   registryTTL: 60
 
+apm:
+  enabled: true
+  endpoint: tcp://127.0.0.1:8201
+
 source:
   - type: agent
     config:

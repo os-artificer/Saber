@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"os-artificer/saber/internal/transfer/apm"
 	"os-artificer/saber/internal/transfer/config"
 	"os-artificer/saber/internal/transfer/sink"
 	"os-artificer/saber/internal/transfer/source"
@@ -43,11 +44,12 @@ type Service struct {
 	handler   *source.ConnectionHandler
 	sink      sink.Sink
 	serviceID string
+	apm       *apm.APM
 }
 
-// CreateService creates a new transfer service.
+// CreateService creates a new transfer service. apmSvc may be nil if APM is disabled.
 // Sink is built from config.Cfg.Sink; if creation fails, returns an error.
-func CreateService(ctx context.Context, serviceID string) (*Service, error) {
+func CreateService(ctx context.Context, serviceID string, apmSvc *apm.APM) (*Service, error) {
 	snk, err := NewSinkFromConfig(config.Cfg.Sink)
 	if err != nil {
 		return nil, err
@@ -70,19 +72,28 @@ func CreateService(ctx context.Context, serviceID string) (*Service, error) {
 			handler:   handler,
 			sink:      snk,
 			serviceID: serviceID,
+			apm:       apmSvc,
 		}, nil
 	}
 
 	return nil, fmt.Errorf("source type not supported")
 }
 
-// Run starts the transfer service.
+// Run starts the transfer service. If APM is enabled, it is started in a goroutine before the source runs.
 func (s *Service) Run() error {
+	if s.apm != nil && s.apm.IsEnabled() {
+		go func() {
+			_ = s.apm.Run()
+		}()
+	}
 	return s.svr.Run(context.Background(), s.handler)
 }
 
-// Close stops the transfer service: closes the connection handler then the sink.
+// Close stops the transfer service (APM first, then connection handler and sink).
 func (s *Service) Close() error {
+	if s.apm != nil {
+		_ = s.apm.Close()
+	}
 	if s.handler != nil {
 		s.handler.Close()
 		s.handler = nil

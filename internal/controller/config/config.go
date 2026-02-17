@@ -39,9 +39,23 @@ var Cfg = Configuration{
 		RegistryTTL:           60,
 	},
 
-	Service: ServiceConfig{
-		ListenAddress: sbnet.Endpoint{Protocol: "tcp", Host: "127.0.0.1", Port: 26689},
+	APM: APMConfig{
+		Enabled: true,
+		Endpoint: sbnet.Endpoint{
+			Protocol: "http",
+			Host:     "127.0.0.1",
+			Port:     8200,
+		},
 	},
+
+	Service: ServiceConfig{
+		ListenAddress: sbnet.Endpoint{
+			Protocol: "tcp",
+			Host:     "127.0.0.1",
+			Port:     26689,
+		},
+	},
+
 	Log: LogConfig{
 		FileName:       "./logs/controller.log",
 		LogLevel:       logger.DebugLevel,
@@ -64,6 +78,12 @@ type DiscoveryConfig struct {
 	RegistryTTL           int64         `yaml:"registryTTL"` // in seconds
 }
 
+// APMConfig APM config
+type APMConfig struct {
+	Enabled  bool           `yaml:"enabled"`
+	Endpoint sbnet.Endpoint `yaml:"endpoint"`
+}
+
 // ServiceConfig service local config
 type ServiceConfig struct {
 	ListenAddress sbnet.Endpoint `yaml:"listenAddress"`
@@ -83,6 +103,7 @@ type Configuration struct {
 	Name      string          `yaml:"name"`
 	Version   string          `yaml:"version"`
 	Discovery DiscoveryConfig `yaml:"discovery"`
+	APM       APMConfig       `yaml:"apm"`
 	Service   ServiceConfig   `yaml:"service"`
 	Log       LogConfig       `yaml:"log"`
 }
