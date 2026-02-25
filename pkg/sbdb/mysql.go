@@ -27,11 +27,6 @@ type MySQL struct {
 	db *gorm.DB
 }
 
-// DB returns the underlying *gorm.DB for advanced use.
-func (m *MySQL) DB() *gorm.DB {
-	return m.db
-}
-
 func NewMySQL(opts ...Option) (*MySQL, error) {
 	o := defaultOptions
 
@@ -47,4 +42,23 @@ func NewMySQL(opts ...Option) (*MySQL, error) {
 	}
 
 	return &MySQL{db: db}, nil
+}
+
+// DB returns the underlying *gorm.DB for advanced use.
+func (m *MySQL) DB() *gorm.DB {
+	return m.db
+}
+
+// Close closes the MySQL connection.
+func (m *MySQL) Close() error {
+	if m.db == nil {
+		return nil
+	}
+
+	sqlDB, err := m.db.DB()
+	if err != nil {
+		return fmt.Errorf("get mysql db: %w", err)
+	}
+
+	return sqlDB.Close()
 }
