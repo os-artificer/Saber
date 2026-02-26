@@ -53,7 +53,7 @@ var Cfg = Configuration{
 		{
 			Type: "agent",
 			Config: map[string]any{
-				"endpoints":        "tcp://127.0.0.1:26688",
+				"endpoint":         "tcp://127.0.0.1:26688",
 				"syncMetaInterval": 30 * time.Second,
 			},
 		},
