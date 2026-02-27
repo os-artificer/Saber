@@ -18,11 +18,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{/*
-Selector labels for transfer
+Selector labels for databus
 */}}
-{{- define "saber.transfer.selectorLabels" -}}
+{{- define "saber.databus.selectorLabels" -}}
 app.kubernetes.io/name: saber
-app.kubernetes.io/component: transfer
+app.kubernetes.io/component: databus
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
@@ -43,10 +43,10 @@ Controller full name
 {{- end -}}
 
 {{/*
-Transfer full name
+Databus full name
 */}}
-{{- define "saber.transfer.fullname" -}}
-{{ .Release.Name }}-transfer
+{{- define "saber.databus.fullname" -}}
+{{ .Release.Name }}-databus
 {{- end -}}
 
 {{/*

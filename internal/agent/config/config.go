@@ -39,7 +39,7 @@ var Cfg = Configuration{
 
 	Reporters: []ReporterEntry{
 		{
-			Type: "transfer",
+			Type: "databus",
 			Config: map[string]any{
 				"endpoints": "tcp://127.0.0.1:26689",
 			},
