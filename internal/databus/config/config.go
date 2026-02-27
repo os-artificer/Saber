@@ -78,6 +78,15 @@ var Cfg = Configuration{
 	},
 }
 
+type SourceType string
+type SinkType string
+
+const (
+	SourceTypeAgent = SourceType("agent")
+	SinkTypeKafka   = SinkType("kafka")
+	SinkTypeMySQL   = SinkType("mysql")
+)
+
 type DiscoveryConfig struct {
 	EtcdEndpoint          string        `yaml:"etcdEndpoint"`
 	EtcdUser              string        `yaml:"etcdUser"`
@@ -113,14 +122,15 @@ type LogConfig struct {
 
 // SourceConfig source configuration
 type SourceConfig struct {
-	Type   string         `yaml:"type"`
+	Type   SourceType     `yaml:"type"`
 	Config map[string]any `yaml:"config"`
 }
 
 // SinkConfig sink configuration
 type SinkConfig struct {
-	Type   string         `yaml:"type"`
-	Config map[string]any `yaml:"config"`
+	Type    SinkType       `yaml:"type"`
+	Enabled *bool          `yaml:"enabled,omitempty"` // nil or true = enabled, false = disabled
+	Config  map[string]any `yaml:"config"`
 }
 
 // Configuration databus's configuration

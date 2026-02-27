@@ -40,7 +40,7 @@ $(BINARIES):
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=0 GOOS=$(GO_OS) GOARCH=amd64 go build -ldflags=$(BUILD_FLAG) \
 		-gcflags="all=-trimpath=$(PWD)" -asmflags="all=-trimpath=$(PWD)" \
-		-o $(BUILD_DIR)/$@ cmd/$@/main.go
+		-o $(BUILD_DIR)/saber-$@ cmd/$@/main.go
 
 # docker image (build from repo root: make docker-build)
 REGISTRY ?= saber

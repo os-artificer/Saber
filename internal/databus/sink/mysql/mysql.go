@@ -39,6 +39,10 @@ func NewMySQLSink(db *sbdb.MySQL) *MySQLSink {
 
 // Write implements sink.Sink.
 func (m *MySQLSink) Write(ctx context.Context, req *proto.DatabusRequest) error {
+	logger.Debugf("write databus request to mysql: %v", req)
+
+	// TODO: write to mysql
+
 	return nil
 }
 

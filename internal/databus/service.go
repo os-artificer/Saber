@@ -33,6 +33,7 @@ import (
 	"os-artificer/saber/pkg/sbnet"
 
 	"github.com/go-viper/mapstructure/v2"
+	"golang.org/x/sync/errgroup"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
@@ -46,13 +47,15 @@ var databusUnmarshalOpt = viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(
 ))
 
 type Service struct {
-	svr             *source.AgentSource
+	sources         []source.Source
 	handler         *source.ConnectionHandler
 	sink            sink.Sink
 	serviceID       string
 	apm             *apm.APM
 	discoveryClient *discovery.Client
 	registry        *discovery.Registry
+	runCtx          context.Context
+	runCancel       context.CancelFunc
 }
 
 // CreateService creates a new databus service. APM is initialized later in Run() via InitAPM().
@@ -65,33 +68,28 @@ func CreateService(ctx context.Context, serviceID string) (*Service, error) {
 
 	handler := source.NewConnectionHandler(snk)
 
-	for _, src := range config.Cfg.Source {
-		if src.Type != "agent" {
-			continue
-		}
-
-		cfg, err := source.ConfigFromMap(src.Config)
-		if err != nil {
-			return nil, err
-		}
-
-		address, err := cfg.ListenAddress()
-		if err != nil {
-			return nil, err
-		}
-
-		return &Service{
-			svr:             source.NewAgentSource(address, nil),
-			handler:         handler,
-			sink:            snk,
-			serviceID:       serviceID,
-			apm:             nil,
-			discoveryClient: nil,
-			registry:        nil,
-		}, nil
+	if len(config.Cfg.Source) == 0 {
+		return nil, fmt.Errorf("no source configured")
 	}
 
-	return nil, fmt.Errorf("source type not supported")
+	sources, err := source.NewSourcesFromConfig(config.Cfg.Source)
+	if err != nil {
+		return nil, err
+	}
+
+	runCtx, runCancel := context.WithCancel(context.Background())
+
+	return &Service{
+		sources:         sources,
+		handler:         handler,
+		sink:            snk,
+		serviceID:       serviceID,
+		apm:             nil,
+		discoveryClient: nil,
+		registry:        nil,
+		runCtx:          runCtx,
+		runCancel:      runCancel,
+	}, nil
 }
 
 // InitLogger initializes the global logger from config.Cfg.Log (pkg/logger).
@@ -199,7 +197,7 @@ func (s *Service) RegisterSelf() error {
 	return nil
 }
 
-// Run starts the databus service. It initializes logger and APM, then starts APM (if enabled) in a goroutine and runs the source.
+// Run starts the databus service. It initializes logger and APM, then starts all sources concurrently.
 func (s *Service) Run() error {
 	if err := s.InitLogger(); err != nil {
 		return err
@@ -213,11 +211,22 @@ func (s *Service) Run() error {
 		return err
 	}
 
-	return s.svr.Run(context.Background(), s.handler)
+	g, gCtx := errgroup.WithContext(s.runCtx)
+	for _, src := range s.sources {
+		src := src
+		g.Go(func() error {
+			return src.Run(gCtx, s.handler)
+		})
+	}
+	return g.Wait()
 }
 
-// Close stops the databus service (registry, APM, then connection handler and sink).
+// Close stops the databus service (cancels sources, then registry, APM, connection handler and sink).
 func (s *Service) Close() error {
+	if s.runCancel != nil {
+		s.runCancel()
+		s.runCancel = nil
+	}
 	if s.registry != nil {
 		s.registry.Close()
 		s.registry = nil
@@ -286,7 +295,7 @@ func buildDiscoveryTLS(cfg *config.DiscoveryConfig, endpoints []string) (*tls.Co
 // getDatabusListenAddr returns the first agent source endpoint from config as the listen address for discovery.
 func getDatabusListenAddr() string {
 	for _, src := range config.Cfg.Source {
-		if src.Type != "agent" {
+		if src.Type != config.SourceTypeAgent {
 			continue
 		}
 		cfg, err := source.ConfigFromMap(src.Config)
