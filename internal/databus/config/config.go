@@ -84,6 +84,7 @@ type SinkType string
 const (
 	SourceTypeAgent = SourceType("agent")
 	SinkTypeKafka   = SinkType("kafka")
+	SinkTypeMySQL   = SinkType("mysql")
 )
 
 type DiscoveryConfig struct {
@@ -127,8 +128,9 @@ type SourceConfig struct {
 
 // SinkConfig sink configuration
 type SinkConfig struct {
-	Type   SinkType       `yaml:"type"`
-	Config map[string]any `yaml:"config"`
+	Type    SinkType       `yaml:"type"`
+	Enabled *bool          `yaml:"enabled,omitempty"` // nil or true = enabled, false = disabled
+	Config  map[string]any `yaml:"config"`
 }
 
 // Configuration databus's configuration

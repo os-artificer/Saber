@@ -22,12 +22,13 @@ import (
 	"os-artificer/saber/internal/databus/config"
 	"os-artificer/saber/internal/databus/sink"
 	"os-artificer/saber/internal/databus/sink/kafka"
+	"os-artificer/saber/internal/databus/sink/mysql"
 	"os-artificer/saber/pkg/logger"
+	"os-artificer/saber/pkg/sbdb"
+	"os-artificer/saber/pkg/sbnet"
 
 	kafkago "github.com/segmentio/kafka-go"
 )
-
-const sinkTypeKafka = "kafka"
 
 // NewSinkFromConfig builds a sink.Sink from the given sink configs.
 // Returns nil, nil when configs is empty or all entries are skipped (e.g. unknown type);
@@ -40,6 +41,9 @@ func NewSinkFromConfig(configs []config.SinkConfig) (sink.Sink, error) {
 
 	var sinks []sink.Sink
 	for i, sc := range configs {
+		if sc.Enabled != nil && !*sc.Enabled {
+			continue
+		}
 		s, err := buildSink(&sc)
 		if err != nil {
 			return nil, fmt.Errorf("sink[%d] type %q: %w", i, sc.Type, err)
@@ -66,8 +70,10 @@ func buildSink(sc *config.SinkConfig) (sink.Sink, error) {
 	}
 
 	switch sc.Type {
-	case sinkTypeKafka:
+	case config.SinkTypeKafka:
 		return buildKafkaSink(sc.Config)
+	case config.SinkTypeMySQL:
+		return buildMySQLSink(sc.Config)
 
 	default:
 		logger.Warnf("unknown sink type %q, skipping", sc.Type)
@@ -96,6 +102,42 @@ func buildKafkaSink(cfg map[string]any) (sink.Sink, error) {
 	}
 
 	return kafka.New(writer), nil
+}
+
+func buildMySQLSink(cfg map[string]any) (sink.Sink, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("mysql config is empty")
+	}
+
+	urlStr, err := parseString(cfg, "url")
+	if err != nil || urlStr == "" {
+		return nil, fmt.Errorf("url: %w", err)
+	}
+
+	ep, err := sbnet.NewEndpointFromString(urlStr)
+	if err != nil {
+		return nil, fmt.Errorf("url %q: %w", urlStr, err)
+	}
+
+	username, _ := parseString(cfg, "username")
+	password, _ := parseString(cfg, "password")
+	database, err := parseString(cfg, "database")
+	if err != nil || database == "" {
+		return nil, fmt.Errorf("database: %w", err)
+	}
+
+	db, err := sbdb.NewMySQL(
+		sbdb.OptionUser(username),
+		sbdb.OptionPassword(password),
+		sbdb.OptionHost(ep.Host),
+		sbdb.OptionPort(ep.Port),
+		sbdb.OptionDatabase(database),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("connect mysql: %w", err)
+	}
+
+	return mysql.NewMySQLSink(db), nil
 }
 
 func parseString(m map[string]any, key string) (string, error) {

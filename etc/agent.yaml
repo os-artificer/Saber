@@ -7,13 +7,13 @@ accessServers:
   syncMetaInterval: 30s
 
 controller:
-  endpoints: "tcp://127.0.0.1:26688"
+  endpoints: "tcp://127.0.0.1:26689"
   syncMetaInterval: 30s
 
 reporters:
   - type: databus
     config:
-      endpoints: tcp://127.0.0.1:26689
+      endpoints: tcp://127.0.0.1:26688
 
 harvester:
   plugins:
