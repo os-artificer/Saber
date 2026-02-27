@@ -18,8 +18,14 @@ package source
 
 import (
 	"context"
+	"fmt"
 
+	"os-artificer/saber/internal/databus/config"
 	"os-artificer/saber/pkg/proto"
+)
+
+var (
+	ErrSourceTypeNotSupported = fmt.Errorf("source type not supported")
 )
 
 // Handler processes a single DatabusRequest (e.g. write to Kafka, log).
@@ -32,4 +38,43 @@ type Handler interface {
 // until context is done. Implementations may start a gRPC server or other acceptor.
 type Source interface {
 	Run(ctx context.Context, h Handler) error
+}
+
+// NewSourceFromConfig creates a new source from a config.SourceConfig.
+// Supported source types: agent.
+func NewSourceFromConfig(cfg *config.SourceConfig) (Source, error) {
+	switch cfg.Type {
+	case config.SourceTypeAgent:
+		cfg, err := ConfigFromMap(cfg.Config)
+		if err != nil {
+			return nil, err
+		}
+
+		address, err := cfg.ListenAddress()
+		if err != nil {
+			return nil, err
+		}
+		return NewAgentSource(address, nil), nil
+
+	default:
+		return nil, ErrSourceTypeNotSupported
+	}
+}
+
+// NewSourcesFromConfig creates sources from a slice of config.SourceConfig.
+// Returns (nil, error) if any config fails to create a source.
+func NewSourcesFromConfig(cfgs []config.SourceConfig) ([]Source, error) {
+	if len(cfgs) == 0 {
+		return []Source{}, nil
+	}
+
+	sources := make([]Source, 0, len(cfgs))
+	for i := range cfgs {
+		src, err := NewSourceFromConfig(&cfgs[i])
+		if err != nil {
+			return nil, err
+		}
+		sources = append(sources, src)
+	}
+	return sources, nil
 }
