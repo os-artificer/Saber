@@ -70,13 +70,18 @@ func CreateService(ctx context.Context, serviceID string) (*Service, error) {
 			continue
 		}
 
-		address, err := sbnet.NewEndpointFromString(src.Config["endpoint"].(string))
+		cfg, err := source.ConfigFromMap(src.Config)
+		if err != nil {
+			return nil, err
+		}
+
+		address, err := cfg.ListenAddress()
 		if err != nil {
 			return nil, err
 		}
 
 		return &Service{
-			svr:             source.NewAgentSource(*address, nil),
+			svr:             source.NewAgentSource(address, nil),
 			handler:         handler,
 			sink:            snk,
 			serviceID:       serviceID,
@@ -108,6 +113,12 @@ func (s *Service) InitLogger() error {
 func (s *Service) InitAPM() error {
 	cfg := &config.Cfg.APM
 	s.apm = apm.NewAPM(cfg.Enabled, cfg.Endpoint)
+
+	if s.apm.IsEnabled() {
+		go func() {
+			_ = s.apm.Run()
+		}()
+	}
 	return nil
 }
 
@@ -129,70 +140,6 @@ func (s *Service) ReloadConfig() error {
 	}
 	logger.Infof("config reloaded")
 	return nil
-}
-
-// buildDiscoveryTLS builds *tls.Config from discovery config for etcd https endpoints.
-// Returns (nil, nil) when TLS is not needed (no UseTLS, no cert paths, no InsecureSkipVerify, no https endpoint).
-// If any endpoint starts with "https://" but TLS was not configured, a TLS config with InsecureSkipVerify is used.
-func buildDiscoveryTLS(cfg *config.DiscoveryConfig, endpoints []string) (*tls.Config, error) {
-	needTLS := cfg.UseTLS || cfg.InsecureSkipVerify || cfg.EtcdCACert != "" || cfg.EtcdCert != "" || cfg.EtcdKey != ""
-	if !needTLS {
-		for _, ep := range endpoints {
-			if strings.HasPrefix(ep, "https://") {
-				needTLS = true
-				break
-			}
-		}
-	}
-	if !needTLS {
-		return nil, nil
-	}
-	insecureSkip := cfg.InsecureSkipVerify
-	if !insecureSkip && cfg.EtcdCACert == "" && cfg.EtcdCert == "" && cfg.EtcdKey == "" {
-		for _, ep := range endpoints {
-			if strings.HasPrefix(ep, "https://") {
-				insecureSkip = true
-				break
-			}
-		}
-	}
-	tlsCfg := &tls.Config{InsecureSkipVerify: insecureSkip}
-	if cfg.EtcdCACert != "" {
-		b, err := os.ReadFile(cfg.EtcdCACert)
-		if err != nil {
-			return nil, err
-		}
-		pool := x509.NewCertPool()
-		if !pool.AppendCertsFromPEM(b) {
-			return nil, fmt.Errorf("no valid CA certs in %s", cfg.EtcdCACert)
-		}
-		tlsCfg.RootCAs = pool
-	}
-	if cfg.EtcdCert != "" && cfg.EtcdKey != "" {
-		cert, err := tls.LoadX509KeyPair(cfg.EtcdCert, cfg.EtcdKey)
-		if err != nil {
-			return nil, err
-		}
-		tlsCfg.Certificates = []tls.Certificate{cert}
-	}
-	return tlsCfg, nil
-}
-
-// getTransferListenAddr returns the first agent source endpoint from config as the listen address for discovery.
-func getTransferListenAddr() string {
-	for _, src := range config.Cfg.Source {
-		if src.Type != "agent" {
-			continue
-		}
-		if ep, ok := src.Config["endpoint"].(string); ok && ep != "" {
-			return ep
-		}
-		if ep, ok := src.Config["endpoints"].(string); ok && ep != "" {
-			return ep
-		}
-		break
-	}
-	return ""
 }
 
 // RegisterSelf registers the transfer service with the discovery service (etcd).
@@ -257,13 +204,9 @@ func (s *Service) Run() error {
 	if err := s.InitLogger(); err != nil {
 		return err
 	}
+
 	if err := s.InitAPM(); err != nil {
 		return err
-	}
-	if s.apm != nil && s.apm.IsEnabled() {
-		go func() {
-			_ = s.apm.Run()
-		}()
 	}
 
 	if err := s.RegisterSelf(); err != nil {
@@ -291,6 +234,72 @@ func (s *Service) Close() error {
 		s.sink = nil
 	}
 	return nil
+}
+
+// buildDiscoveryTLS builds *tls.Config from discovery config for etcd https endpoints.
+// Returns (nil, nil) when TLS is not needed (no UseTLS, no cert paths, no InsecureSkipVerify, no https endpoint).
+// If any endpoint starts with "https://" but TLS was not configured, a TLS config with InsecureSkipVerify is used.
+func buildDiscoveryTLS(cfg *config.DiscoveryConfig, endpoints []string) (*tls.Config, error) {
+	needTLS := cfg.UseTLS || cfg.InsecureSkipVerify || cfg.EtcdCACert != "" || cfg.EtcdCert != "" || cfg.EtcdKey != ""
+	if !needTLS {
+		for _, ep := range endpoints {
+			if strings.HasPrefix(ep, "https://") {
+				needTLS = true
+				break
+			}
+		}
+	}
+	if !needTLS {
+		return nil, nil
+	}
+	insecureSkip := cfg.InsecureSkipVerify
+	if !insecureSkip && cfg.EtcdCACert == "" && cfg.EtcdCert == "" && cfg.EtcdKey == "" {
+		for _, ep := range endpoints {
+			if strings.HasPrefix(ep, "https://") {
+				insecureSkip = true
+				break
+			}
+		}
+	}
+	tlsCfg := &tls.Config{InsecureSkipVerify: insecureSkip}
+	if cfg.EtcdCACert != "" {
+		b, err := os.ReadFile(cfg.EtcdCACert)
+		if err != nil {
+			return nil, err
+		}
+		pool := x509.NewCertPool()
+		if !pool.AppendCertsFromPEM(b) {
+			return nil, fmt.Errorf("no valid CA certs in %s", cfg.EtcdCACert)
+		}
+		tlsCfg.RootCAs = pool
+	}
+	if cfg.EtcdCert != "" && cfg.EtcdKey != "" {
+		cert, err := tls.LoadX509KeyPair(cfg.EtcdCert, cfg.EtcdKey)
+		if err != nil {
+			return nil, err
+		}
+		tlsCfg.Certificates = []tls.Certificate{cert}
+	}
+	return tlsCfg, nil
+}
+
+// getTransferListenAddr returns the first agent source endpoint from config as the listen address for discovery.
+func getTransferListenAddr() string {
+	for _, src := range config.Cfg.Source {
+		if src.Type != "agent" {
+			continue
+		}
+		cfg, err := source.ConfigFromMap(src.Config)
+		if err != nil {
+			return ""
+		}
+		ep, err := cfg.ListenAddress()
+		if err != nil {
+			return ""
+		}
+		return ep.String()
+	}
+	return ""
 }
 
 // loadTransferConfig reads config from ConfigFilePath into config.Cfg.
