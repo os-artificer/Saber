@@ -13,8 +13,10 @@ data:
     controller:
       endpoints: {{ include "saber.controller.fullname" . }}:26688
       syncMetaInterval: 30s
-    transfer:
-      endpoints: {{ include "saber.transfer.fullname" . }}:26689
+    reporters:
+      - type: databus
+        config:
+          endpoints: {{ include "saber.databus.fullname" . }}:26689
     collector:
       interval: {{ .Values.agent.config.collector.interval }}
     log:

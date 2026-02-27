@@ -9,7 +9,7 @@ RUN go mod download
 
 COPY . .
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /app/controller ./cmd/controller && \
-    CGO_ENABLED=0 go build -ldflags="-s -w" -o /app/transfer ./cmd/transfer && \
+    CGO_ENABLED=0 go build -ldflags="-s -w" -o /app/databus ./cmd/databus && \
     CGO_ENABLED=0 go build -ldflags="-s -w" -o /app/agent ./cmd/agent
 
 # Runtime stage
@@ -18,7 +18,7 @@ RUN apk add --no-cache ca-certificates
 WORKDIR /app
 
 COPY --from=builder /app/controller /app/controller
-COPY --from=builder /app/transfer /app/transfer
+COPY --from=builder /app/databus /app/databus
 COPY --from=builder /app/agent /app/agent
 
-# No default CMD; Helm sets command per Deployment (controller / transfer / agent)
+# No default CMD; Helm sets command per Deployment (controller / databus / agent)
