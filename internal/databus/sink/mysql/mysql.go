@@ -19,15 +19,15 @@ package mysql
 import (
 	"context"
 
-	"os-artificer/saber/internal/databus/sink"
+	"os-artificer/saber/internal/databus/sink/base"
 	"os-artificer/saber/pkg/logger"
 	"os-artificer/saber/pkg/proto"
 	"os-artificer/saber/pkg/sbdb"
 )
 
-var _ sink.Sink = (*MySQLSink)(nil)
+var _ base.Sink = (*MySQLSink)(nil)
 
-// MySQLSink implements sink.Sink by writing DatabusRequest to MySQL.
+// MySQLSink implements base.Sink by writing DatabusRequest to MySQL.
 type MySQLSink struct {
 	db *sbdb.MySQL
 }
@@ -37,7 +37,7 @@ func NewMySQLSink(db *sbdb.MySQL) *MySQLSink {
 	return &MySQLSink{db: db}
 }
 
-// Write implements sink.Sink.
+// Write implements base.Sink.
 func (m *MySQLSink) Write(ctx context.Context, req *proto.DatabusRequest) error {
 	logger.Debugf("write databus request to mysql: %v", req)
 
@@ -46,7 +46,7 @@ func (m *MySQLSink) Write(ctx context.Context, req *proto.DatabusRequest) error 
 	return nil
 }
 
-// Close implements sink.Sink.
+// Close implements base.Sink.
 func (m *MySQLSink) Close() error {
 	if m.db == nil {
 		return nil

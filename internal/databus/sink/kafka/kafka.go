@@ -19,7 +19,7 @@ package kafka
 import (
 	"context"
 
-	"os-artificer/saber/internal/databus/sink"
+	"os-artificer/saber/internal/databus/sink/base"
 	"os-artificer/saber/pkg/logger"
 	"os-artificer/saber/pkg/proto"
 
@@ -27,9 +27,9 @@ import (
 	kafkago "github.com/segmentio/kafka-go"
 )
 
-var _ sink.Sink = (*KafkaSink)(nil)
+var _ base.Sink = (*KafkaSink)(nil)
 
-// KafkaSink implements sink.Sink by writing DatabusRequest to Kafka.
+// KafkaSink implements base.Sink by writing DatabusRequest to Kafka.
 type KafkaSink struct {
 	writer *kafkago.Writer
 }
@@ -39,7 +39,7 @@ func New(writer *kafkago.Writer) *KafkaSink {
 	return &KafkaSink{writer: writer}
 }
 
-// Write implements sink.Sink.
+// Write implements base.Sink.
 func (k *KafkaSink) Write(ctx context.Context, req *proto.DatabusRequest) error {
 	if k.writer == nil || req == nil || len(req.Payload) == 0 {
 		return nil
@@ -56,7 +56,7 @@ func (k *KafkaSink) Write(ctx context.Context, req *proto.DatabusRequest) error 
 	return nil
 }
 
-// Close implements sink.Sink.
+// Close implements base.Sink.
 func (k *KafkaSink) Close() error {
 	if k.writer == nil {
 		return nil

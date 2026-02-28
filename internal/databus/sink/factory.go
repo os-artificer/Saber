@@ -14,13 +14,13 @@
  * limitations under the License.
 **/
 
-package factory
+package sink
 
 import (
 	"fmt"
 
 	"os-artificer/saber/internal/databus/config"
-	"os-artificer/saber/internal/databus/sink"
+	"os-artificer/saber/internal/databus/sink/base"
 	"os-artificer/saber/internal/databus/sink/kafka"
 	"os-artificer/saber/internal/databus/sink/mysql"
 	"os-artificer/saber/pkg/logger"
@@ -30,16 +30,16 @@ import (
 	kafkago "github.com/segmentio/kafka-go"
 )
 
-// NewSinkFromConfig builds a sink.Sink from the given sink configs.
+// NewSinkFromConfig builds a base.Sink from the given sink configs.
 // Returns nil, nil when configs is empty or all entries are skipped (e.g. unknown type);
 // the caller may treat nil as "no sink" (requests dropped).
 // Returns an error when a configured sink fails to build (e.g. invalid kafka config).
-func NewSinkFromConfig(configs []config.SinkConfig) (sink.Sink, error) {
+func NewSinkFromConfig(configs []config.SinkConfig) (base.Sink, error) {
 	if len(configs) == 0 {
 		return nil, nil
 	}
 
-	var sinks []sink.Sink
+	var sinks []base.Sink
 	for i, sc := range configs {
 		if sc.Enabled != nil && !*sc.Enabled {
 			continue
@@ -61,10 +61,10 @@ func NewSinkFromConfig(configs []config.SinkConfig) (sink.Sink, error) {
 	if len(sinks) == 1 {
 		return sinks[0], nil
 	}
-	return sink.NewMultiSink(sinks), nil
+	return NewMultiSink(sinks), nil
 }
 
-func buildSink(sc *config.SinkConfig) (sink.Sink, error) {
+func buildSink(sc *config.SinkConfig) (base.Sink, error) {
 	if sc == nil {
 		return nil, nil
 	}
@@ -81,7 +81,7 @@ func buildSink(sc *config.SinkConfig) (sink.Sink, error) {
 	}
 }
 
-func buildKafkaSink(cfg map[string]any) (sink.Sink, error) {
+func buildKafkaSink(cfg map[string]any) (base.Sink, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("kafka config is empty")
 	}
@@ -104,7 +104,7 @@ func buildKafkaSink(cfg map[string]any) (sink.Sink, error) {
 	return kafka.New(writer), nil
 }
 
-func buildMySQLSink(cfg map[string]any) (sink.Sink, error) {
+func buildMySQLSink(cfg map[string]any) (base.Sink, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("mysql config is empty")
 	}
