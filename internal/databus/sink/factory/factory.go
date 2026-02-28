@@ -14,7 +14,7 @@
  * limitations under the License.
 **/
 
-package databus
+package factory
 
 import (
 	"fmt"
