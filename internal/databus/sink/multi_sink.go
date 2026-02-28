@@ -19,9 +19,13 @@ package sink
 import (
 	"context"
 
+	sinkbase "os-artificer/saber/internal/databus/sink/base"
 	"os-artificer/saber/pkg/logger"
 	"os-artificer/saber/pkg/proto"
 )
+
+// Sink re-exports the sink interface from base so callers continue to use sink.Sink.
+type Sink = sinkbase.Sink
 
 var _ Sink = (*MultiSink)(nil)
 

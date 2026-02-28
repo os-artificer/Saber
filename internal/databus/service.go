@@ -27,7 +27,6 @@ import (
 	"os-artificer/saber/internal/databus/apm"
 	"os-artificer/saber/internal/databus/config"
 	"os-artificer/saber/internal/databus/sink"
-	"os-artificer/saber/internal/databus/sink/factory"
 	"os-artificer/saber/internal/databus/source"
 	"os-artificer/saber/pkg/discovery"
 	"os-artificer/saber/pkg/logger"
@@ -62,7 +61,7 @@ type Service struct {
 // CreateService creates a new databus service. APM is initialized later in Run() via InitAPM().
 // Sink is built from config.Cfg.Sink; if creation fails, returns an error.
 func CreateService(ctx context.Context, serviceID string) (*Service, error) {
-	snk, err := factory.NewSinkFromConfig(config.Cfg.Sink)
+	snk, err := sink.NewSinkFromConfig(config.Cfg.Sink)
 	if err != nil {
 		return nil, err
 	}

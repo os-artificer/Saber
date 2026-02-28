@@ -14,7 +14,7 @@
  * limitations under the License.
 **/
 
-package sink
+package base
 
 import (
 	"context"
