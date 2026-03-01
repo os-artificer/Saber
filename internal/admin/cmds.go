@@ -17,6 +17,7 @@
 package admin
 
 import (
+	"os-artificer/saber/internal/admin/migration"
 	"os-artificer/saber/pkg/version"
 
 	"github.com/spf13/cobra"
@@ -64,3 +65,6 @@ var HealthCheckCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 	},
 }
+
+// MigrateCmd creates database and runs migrations (uses service.storage when type=mysql).
+var MigrateCmd = migration.NewMigrateCmd(GetDBConfigForMigrate)

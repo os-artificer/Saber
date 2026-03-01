@@ -29,7 +29,7 @@ sink:
       url: "tcp://127.0.0.1:3308"
       username: "root"
       password: "sabertest"
-      database: "saber_metrics"
+      database: "saber"
 
   - type: kafka
     enabled: false

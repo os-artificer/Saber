@@ -65,6 +65,20 @@ var Cfg = Configuration{
 	},
 }
 
+// MySQLStorageConfig holds MySQL connection settings under service.storage.config.
+type MySQLStorageConfig struct {
+	URL      string `yaml:"url"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+	Database string `yaml:"database"`
+}
+
+// StorageConfig is service.storage (type + config for that type).
+type StorageConfig struct {
+	Type   string             `yaml:"type"`
+	Config MySQLStorageConfig `yaml:"config"`
+}
+
 // DiscoveryConfig discovery's config
 type DiscoveryConfig struct {
 	EtcdEndpoint          string        `yaml:"etcdEndpoint"`
@@ -91,7 +105,8 @@ type APMConfig struct {
 
 // ServiceConfig service local config
 type ServiceConfig struct {
-	ListenAddress sbnet.Endpoint `yaml:"listenAddress"`
+	ListenAddress sbnet.Endpoint  `yaml:"listenAddress"`
+	Storage       *StorageConfig  `yaml:"storage"`
 }
 
 // LogConfig log config
@@ -105,10 +120,10 @@ type LogConfig struct {
 
 // Configuration admin's configuration
 type Configuration struct {
-	Name      string          `yaml:"name"`
-	Version   string          `yaml:"version"`
-	Discovery DiscoveryConfig `yaml:"discovery"`
-	APM       APMConfig       `yaml:"apm"`
-	Service   ServiceConfig   `yaml:"service"`
-	Log       LogConfig       `yaml:"log"`
+	Name      string           `yaml:"name"`
+	Version   string           `yaml:"version"`
+	Discovery DiscoveryConfig  `yaml:"discovery"`
+	APM       APMConfig        `yaml:"apm"`
+	Service   ServiceConfig    `yaml:"service"`
+	Log       LogConfig        `yaml:"log"`
 }

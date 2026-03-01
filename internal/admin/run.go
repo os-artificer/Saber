@@ -41,7 +41,6 @@ func setupGracefulShutdown(svr *Service) {
 
 func Run(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
-	_ = args
 
 	loadAdminConfig()
 

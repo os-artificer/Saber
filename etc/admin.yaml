@@ -18,6 +18,13 @@ apm:
 
 service:
   listenAddress: tcp://127.0.0.1:26690
+  storage:
+    type: mysql
+    config:
+      url: "tcp://127.0.0.1:3308"
+      username: "root"
+      password: "sabertest"
+      database: "saber"
 
 log:
   fileName: ./logs/admin.log

@@ -50,9 +50,10 @@ func main() {
 	rootCmd.AddCommand(admin.ReloadCmd)
 	rootCmd.AddCommand(admin.HealthCheckCmd)
 	rootCmd.AddCommand(admin.VersionCmd)
+	rootCmd.AddCommand(admin.MigrateCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		logger.Errorf("failed to start admin server. errmsg:%s", err.Error())
-		return
+		os.Exit(1)
 	}
 }
