@@ -26,6 +26,7 @@ import (
 	"os-artificer/saber/pkg/constant"
 	"os-artificer/saber/pkg/logger"
 	"os-artificer/saber/pkg/proto"
+	"os-artificer/saber/pkg/sbnet"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -76,13 +77,20 @@ func (c *ControllerClient) OnResponse(h ResponseHandler) {
 }
 
 func (c *ControllerClient) newConn() (*grpc.ClientConn, error) {
+	ep, err := sbnet.NewEndpointFromString(c.endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("parse endpoint %q: %w", c.endpoint, err)
+	}
+	dialAddr := ep.HostPort()
+
 	kacp := keepalive.ClientParameters{
 		Time:                constant.DefaultKeepalivePingInterval,
 		Timeout:             constant.DefaultPingTimeout,
 		PermitWithoutStream: true,
 	}
+
 	return grpc.NewClient(
-		c.endpoint,
+		dialAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithKeepaliveParams(kacp),
 		grpc.WithDefaultCallOptions(

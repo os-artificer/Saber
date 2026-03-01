@@ -18,11 +18,13 @@ package mysql
 
 import (
 	"context"
+	"encoding/json"
 
 	"os-artificer/saber/internal/databus/sink/base"
 	"os-artificer/saber/pkg/logger"
 	"os-artificer/saber/pkg/proto"
 	"os-artificer/saber/pkg/sbdb"
+	"os-artificer/saber/pkg/sbmodels"
 )
 
 var _ base.Sink = (*MySQLSink)(nil)
@@ -39,10 +41,52 @@ func NewMySQLSink(db *sbdb.MySQL) *MySQLSink {
 
 // Write implements base.Sink.
 func (m *MySQLSink) Write(ctx context.Context, req *proto.DatabusRequest) error {
-	logger.Debugf("write databus request to mysql: %v", req)
+	logger.Debugf("write databus request to mysql, client_id=%s, payload_len=%d", req.GetClientID(), len(req.GetPayload()))
 
-	// TODO: write to mysql
+	if len(req.GetPayload()) == 0 {
+		return nil
+	}
 
+	var p databusPayload
+	if err := json.Unmarshal(req.GetPayload(), &p); err != nil {
+		logger.Errorf("mysql sink: unmarshal payload failed: %v", err)
+		return err
+	}
+
+	if p.PluginName != "host" {
+		return nil
+	}
+
+	if req.GetClientID() == "" {
+		logger.Warnf("mysql sink: client_id empty, skip host snapshot")
+		return nil
+	}
+
+	if p.Data == nil {
+		logger.Warnf("mysql sink: host data nil, skip")
+		return nil
+	}
+
+	ips := collectIPs(p.Data.Networks)
+	snapshot := sbmodels.HostSnapshot{
+		MachineID: req.GetClientID(),
+		HostName:  p.Data.Hostname,
+		IPs:       sbmodels.JSONValueOf(&ips),
+		Stats:     sbmodels.JSONValueOf(p.Data),
+	}
+
+	db := m.db.DB()
+	// Upsert: insert when no row for machine_id, otherwise update host_name/ips/stats.
+	err := db.WithContext(ctx).Where(sbmodels.HostSnapshotColMachineID+" = ?", snapshot.MachineID).
+		Assign(map[string]any{
+			sbmodels.HostSnapshotColHostName: snapshot.HostName,
+			sbmodels.HostSnapshotColIPs:      snapshot.IPs,
+			sbmodels.HostSnapshotColStats:    snapshot.Stats,
+		}).FirstOrCreate(&snapshot).Error
+	if err != nil {
+		logger.Errorf("mysql sink: upsert host snapshot failed: %v", err)
+		return err
+	}
 	return nil
 }
 

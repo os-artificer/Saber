@@ -23,6 +23,7 @@ import (
 
 	"os-artificer/saber/internal/agent/harvester/plugin"
 	"os-artificer/saber/pkg/logger"
+	"os-artificer/saber/pkg/sbmodels"
 )
 
 const hostPluginVersion = "1.0.0"
@@ -36,25 +37,10 @@ func init() {
 type HostPlugin struct {
 	plugin.UnimplementedPlugin
 
-	stats *Stats
+	stats *sbmodels.Stats
 	wg    sync.WaitGroup
 	done  chan struct{}
 	opts  Options
-}
-
-func newHostPlugin(ctx context.Context, opts any) (plugin.Plugin, error) {
-	hostOptions, err := OptionsFromAny(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Infof("host plugin options: %+v", hostOptions)
-
-	return &HostPlugin{
-		stats: NewStats(),
-		opts:  hostOptions,
-		done:  make(chan struct{}),
-	}, nil
 }
 
 func (p *HostPlugin) Version() string {
@@ -87,7 +73,7 @@ func (p *HostPlugin) Run(ctx context.Context) (plugin.EventC, error) {
 				return
 
 			case <-timer.C:
-				if err := p.stats.CollectStats(); err != nil {
+				if err := CollectStats(p.stats); err != nil {
 					logger.Errorf("failed to collect host stats: %v", err)
 					timer.Reset(5 * time.Second)
 					continue
