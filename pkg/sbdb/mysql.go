@@ -36,7 +36,9 @@ func NewMySQL(opts ...Option) (*MySQL, error) {
 		}
 	}
 
-	db, err := gorm.Open(mysql.Open(o.DSN()), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(o.DSN()), &gorm.Config{
+		Logger: newGormLogger(),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("open mysql: %w", err)
 	}

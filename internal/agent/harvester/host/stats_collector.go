@@ -22,60 +22,14 @@ import (
 	"strings"
 	"time"
 
+	"os-artificer/saber/pkg/sbmodels"
+
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/mem"
 	netutil "github.com/shirou/gopsutil/v4/net"
 )
-
-// NetworkStats holds info for one NIC only (one instance per 网卡). Dimension: MAC and IPs.
-type NetworkStats struct {
-	MAC       string   `json:"mac"`
-	IPs       []string `json:"ips"`
-	IfName    string   `json:"if_name"`
-	RxBytes   uint64   `json:"rx_bytes"`
-	TxBytes   uint64   `json:"tx_bytes"`
-	RxPackets uint64   `json:"rx_packets"`
-	TxPackets uint64   `json:"tx_packets"`
-	RxErrors  uint64   `json:"rx_errors"`
-	TxErrors  uint64   `json:"tx_errors"`
-	RxFifo    uint64   `json:"rx_fifo"`
-	TxFifo    uint64   `json:"tx_fifo"`
-}
-
-type DiskStats struct {
-	Mountpoint  string  `json:"mountpoint"`
-	UsedPercent float64 `json:"used_percent"`
-}
-
-// Stats is the stats for host metrics/info.
-type Stats struct {
-	CPU      float64        `json:"cpu"`
-	Memory   float64        `json:"memory"`
-	Disk     []DiskStats    `json:"disk"`
-	Networks []NetworkStats `json:"networks"`
-	Uptime   string         `json:"uptime"`
-	Hostname string         `json:"hostname"`
-	OS       string         `json:"os"`
-	Arch     string         `json:"arch"`
-	Kernel   string         `json:"kernel"`
-}
-
-// NewStats creates a new Stats.
-func NewStats() *Stats {
-	return &Stats{
-		CPU:      0,
-		Memory:   0,
-		Disk:     []DiskStats{},
-		Networks: []NetworkStats{},
-		Uptime:   "",
-		Hostname: "",
-		OS:       "",
-		Arch:     "",
-		Kernel:   "",
-	}
-}
 
 // CollectCPU returns CPU usage percentage (0-100) using gopsutil.
 func CollectCPU() float64 {
@@ -98,20 +52,20 @@ func CollectMemory() float64 {
 }
 
 // CollectDisk returns disk usage for physical devices only (e.g. hard disks, CD-ROM, USB) using gopsutil; virtual/memory partitions (e.g. tmpfs, /dev/shm) are excluded.
-func CollectDisk() []DiskStats {
+func CollectDisk() []sbmodels.DiskStats {
 	partitions, err := disk.Partitions(false)
 	if err != nil || len(partitions) == 0 {
-		return []DiskStats{}
+		return []sbmodels.DiskStats{}
 	}
 
-	diskStats := make([]DiskStats, 0)
+	diskStats := make([]sbmodels.DiskStats, 0)
 	for _, p := range partitions {
 		u, err := disk.Usage(p.Mountpoint)
 		if err != nil {
 			continue
 		}
 
-		diskStats = append(diskStats, DiskStats{
+		diskStats = append(diskStats, sbmodels.DiskStats{
 			Mountpoint:  p.Mountpoint,
 			UsedPercent: u.UsedPercent,
 		})
@@ -121,10 +75,10 @@ func CollectDisk() []DiskStats {
 }
 
 // CollectNetwork returns one NetworkStats per physical NIC (one 网卡 per record). Each record has that NIC's MAC, IPs, IfName, and traffic counters.
-func CollectNetwork() []NetworkStats {
+func CollectNetwork() []sbmodels.NetworkStats {
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		return []NetworkStats{}
+		return []sbmodels.NetworkStats{}
 	}
 
 	counterMap := make(map[string]netutil.IOCountersStat)
@@ -134,7 +88,7 @@ func CollectNetwork() []NetworkStats {
 		}
 	}
 
-	out := make([]NetworkStats, 0)
+	out := make([]sbmodels.NetworkStats, 0)
 	for _, iface := range ifaces {
 		if iface.Flags&net.FlagUp == 0 {
 			continue
@@ -160,7 +114,7 @@ func CollectNetwork() []NetworkStats {
 		}
 
 		c := counterMap[iface.Name]
-		out = append(out, NetworkStats{
+		out = append(out, sbmodels.NetworkStats{
 			MAC:       mac,
 			IPs:       ips,
 			IfName:    iface.Name,
@@ -246,8 +200,8 @@ func CollectKernel() string {
 	return version
 }
 
-// CollectStats collects the stats for host metrics/info.
-func (s *Stats) CollectStats() error {
+// CollectStats fills s with collected host metrics/info.
+func CollectStats(s *sbmodels.Stats) error {
 	s.CPU = CollectCPU()
 	s.Memory = CollectMemory()
 
