@@ -1,8 +1,7 @@
-name: databus
+name: admin
 version: v1.0
 
 discovery:
-  # Use https:// when etcd serves TLS; TLS is then enabled automatically (InsecureSkipVerify for dev/test).
   etcdEndpoint: http://etcd-server:2379
   etcdUser: root
   etcdPassword: sabertest
@@ -15,30 +14,20 @@ discovery:
 
 apm:
   enabled: true
-  endpoint: tcp://127.0.0.1:8201
+  endpoint: tcp://127.0.0.1:8202
 
-source:
-  - type: agent
-    config:
-      endpoint: tcp://127.0.0.1:26688
-
-sink:
-  - type: mysql
-    enabled: true
+service:
+  listenAddress: tcp://127.0.0.1:26690
+  storage:
+    type: mysql
     config:
       url: "tcp://127.0.0.1:3308"
       username: "root"
       password: "sabertest"
       database: "saber"
 
-  - type: kafka
-    enabled: false
-    config:
-      brokers: ["127.0.0.1:9092"]
-      topic: "saber-metrics"
-
 log:
-  fileName: ./logs/databus.log
+  fileName: ./logs/admin.log
   logLevel: debug
   fileSize: 100
   maxBackupCount: 10

@@ -28,7 +28,7 @@ PROTO_FILES = $(wildcard $(PROTO_DIR)/*.proto)
 GO_GEN_FILES=$(PROTO_FILES:$(PROTO_DIR)/%.proto=$(GEN_DIR)/%.pb.go)
 
 # binaries: one target per name, built from cmd/$(name)/main.go
-BINARIES := agent controller databus
+BINARIES := admin agent controller databus
 
 .PHONY: all proto docker-build clean $(BINARIES)
 
